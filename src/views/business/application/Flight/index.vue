@@ -1,22 +1,22 @@
-<script setup lang="ts">
-import * as Cesium from 'cesium';
-import { onMounted, ref, provide } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import SplitViewer from '@/components/base/SplitViewer.vue';
+﻿<script setup lang="ts">
+import * as Cesium from "cesium";
+import { onMounted, ref, provide } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
-const activeFeature = ref('start');
-const statusText = ref('相机沿样条路径飞行漫游（Camera + CatmullRomSpline）。');
+const activeFeature = ref("start");
+const statusText = ref("相机沿样条路径飞行漫游（Camera + CatmullRomSpline）。");
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "tianditu-img",
   camera: { position: [108.94, 34.34, 12000], pitch: -60 },
   clock: {
-    start: Cesium.JulianDate.fromIso8601('2026-01-01T00:00:00Z'),
-    stop: Cesium.JulianDate.fromIso8601('2026-01-01T00:10:00Z'),
-    currentTime: Cesium.JulianDate.fromIso8601('2026-01-01T00:00:00Z'),
+    start: Cesium.JulianDate.fromIso8601("2026-01-01T00:00:00Z"),
+    stop: Cesium.JulianDate.fromIso8601("2026-01-01T00:10:00Z"),
+    currentTime: Cesium.JulianDate.fromIso8601("2026-01-01T00:00:00Z"),
     multiplier: 20,
     shouldAnimate: false,
     range: Cesium.ClockRange.LOOP_STOP,
@@ -24,7 +24,13 @@ const { viewer } = useCesiumViewer(containerRef, {
   onTick: (v, time) => {
     if (!running.value) return;
     const totalSec = 20; // 一圈 20 秒
-    const t = (Cesium.JulianDate.secondsDifference(time, Cesium.JulianDate.fromIso8601('2026-01-01T00:00:00Z')) % totalSec) / totalSec;
+    const t =
+      (Cesium.JulianDate.secondsDifference(
+        time,
+        Cesium.JulianDate.fromIso8601("2026-01-01T00:00:00Z")
+      ) %
+        totalSec) /
+      totalSec;
     const pos = spline.evaluate(t);
     // 前进方向上的下一点
     const next = spline.evaluate(Math.min(t + 0.03, 1));
@@ -41,22 +47,23 @@ const { viewer } = useCesiumViewer(containerRef, {
       },
     });
     // 飞行器图标跟随
-    if (aircraft) (aircraft.position as Cesium.ConstantPositionProperty).setValue(pos);
+    if (aircraft)
+      (aircraft.position as Cesium.ConstantPositionProperty).setValue(pos);
   },
 });
 
-const startTime = Cesium.JulianDate.fromIso8601('2026-01-01T00:00:00Z');
+const startTime = Cesium.JulianDate.fromIso8601("2026-01-01T00:00:00Z");
 
 /** 路径关键点（绕西安城区一圈，高度 800m） */
 const WAYPOINTS: [number, number, number][] = [
-  [108.88, 34.30, 900],
+  [108.88, 34.3, 900],
   [108.92, 34.335, 900],
   [108.94, 34.365, 900],
   [108.97, 34.36, 900],
   [109.0, 34.335, 900],
-  [108.99, 34.30, 900],
+  [108.99, 34.3, 900],
   [108.94, 34.285, 900],
-  [108.88, 34.30, 900],
+  [108.88, 34.3, 900],
 ];
 
 const points = WAYPOINTS.map((w) => Cesium.Cartesian3.fromDegrees(...w));
@@ -69,7 +76,10 @@ let pathLine: Cesium.Entity | null = null;
 let aircraft: Cesium.Entity | null = null;
 const speedLevel = ref(1);
 
-function localToEnu(origin: Cesium.Cartesian3, target: Cesium.Cartesian3): Cesium.Cartesian3 {
+function localToEnu(
+  origin: Cesium.Cartesian3,
+  target: Cesium.Cartesian3
+): Cesium.Cartesian3 {
   const m = Cesium.Transforms.eastNorthUpToFixedFrame(origin);
   const inv = Cesium.Matrix4.inverseTransformation(m, new Cesium.Matrix4());
   return Cesium.Matrix4.multiplyByPoint(inv, target, new Cesium.Cartesian3());
@@ -83,7 +93,10 @@ function ensureVisuals() {
       polyline: {
         positions: points,
         width: 3,
-        material: new Cesium.PolylineGlowMaterialProperty({ glowPower: 0.3, color: Cesium.Color.fromCssColorString('#00d2ff') }),
+        material: new Cesium.PolylineGlowMaterialProperty({
+          glowPower: 0.3,
+          color: Cesium.Color.fromCssColorString("#00d2ff"),
+        }),
       },
     });
   }
@@ -91,7 +104,7 @@ function ensureVisuals() {
     aircraft = v.entities.add({
       position: points[0],
       billboard: {
-        image: Cesium.buildModuleUrl('Assets/Textures/maki/airport.png'),
+        image: Cesium.buildModuleUrl("Assets/Textures/maki/airport.png"),
         scale: 1.2,
         color: Cesium.Color.YELLOW,
       },
@@ -100,27 +113,27 @@ function ensureVisuals() {
 }
 
 function applyStart() {
-  activeFeature.value = 'start';
+  activeFeature.value = "start";
   ensureVisuals();
   const v = viewer.value;
   if (!v) return;
   running.value = true;
   v.clock.currentTime = startTime;
   v.clock.shouldAnimate = true;
-  statusText.value = '▶ 漫游开始：相机沿样条路径飞行（CatmullRomSpline）';
+  statusText.value = "▶ 漫游开始：相机沿样条路径飞行（CatmullRomSpline）";
 }
 
 function applyPause() {
-  activeFeature.value = 'start';
+  activeFeature.value = "start";
   const v = viewer.value;
   if (!v) return;
   running.value = !running.value;
   if (!running.value) v.clock.shouldAnimate = false;
-  statusText.value = running.value ? '继续漫游' : '⏸ 漫游暂停';
+  statusText.value = running.value ? "继续漫游" : "⏸ 漫游暂停";
 }
 
 function applySpeed() {
-  activeFeature.value = 'start';
+  activeFeature.value = "start";
   const v = viewer.value;
   if (!v) return;
   speedLevel.value = speedLevel.value >= 4 ? 1 : speedLevel.value + 1;
@@ -133,7 +146,7 @@ function applySpeed() {
 }
 
 function applyReset() {
-  activeFeature.value = 'start';
+  activeFeature.value = "start";
   running.value = false;
   const v = viewer.value;
   if (!v) return;
@@ -144,7 +157,7 @@ function applyReset() {
     orientation: { heading: 0, pitch: Cesium.Math.toRadians(-60), roll: 0 },
     duration: 1,
   });
-  statusText.value = '已重置';
+  statusText.value = "已重置";
 }
 
 onMounted(ensureVisuals);
@@ -185,15 +198,34 @@ const explainMap: Record<string, () => string> = {
 clock.multiplier 实现变速；可扩展为“第一人称/第三人称”视角。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'start' ? 'primary' : 'default'" @click="applyStart">开始漫游</n-button>
-      <n-button size="small" :type="activeFeature === 'start' ? 'primary' : 'default'" @click="applyPause">{{ running ? '暂停' : '继续' }}</n-button>
-      <n-button size="small" :type="activeFeature === 'start' ? 'primary' : 'default'" @click="applySpeed">速度 {{ speedLevel }}x</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'start' ? 'primary' : 'default'"
+        @click="applyStart"
+        >开始漫游</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'start' ? 'primary' : 'default'"
+        @click="applyPause"
+        >{{ running ? "暂停" : "继续" }}</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'start' ? 'primary' : 'default'"
+        @click="applySpeed"
+        >速度 {{ speedLevel }}x</n-button
+      >
       <n-button size="small" quaternary @click="applyReset">重置视角</n-button>
     </div>
 
@@ -206,7 +238,11 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       @split-change="onSplitChange"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </template>
     </SplitViewer>
   </div>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import * as Cesium from "cesium";
 import { onMounted, ref, provide } from "vue";
 import { useCesiumViewer } from "@/hooks/useCesiumViewer";
@@ -12,7 +12,7 @@ const activeIndex = ref(0); // 当前选中的城市索引，用于区分同功�
 const statusText = ref("相机状态：");
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: "esri",
+  baseLayer: "tianditu-vec",
   camera: { position: [108.9, 34.2, 3000000], pitch: -60 },
 });
 

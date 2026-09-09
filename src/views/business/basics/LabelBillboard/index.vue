@@ -1,17 +1,17 @@
-<script setup lang="ts">
-import * as Cesium from 'cesium';
-import { ref, provide } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import SplitViewer from '@/components/base/SplitViewer.vue';
+﻿<script setup lang="ts">
+import * as Cesium from "cesium";
+import { ref, provide } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
-const activeFeature = ref('label');
-const statusText = ref('Label 标注 / Billboard 广告牌 / 图钉 / 集合批量。');
+const activeFeature = ref("label");
+const statusText = ref("Label 标注 / Billboard 广告牌 / 图钉 / 集合批量。");
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "tianditu-img",
   camera: { position: [108.9, 34.2, 2600000], pitch: -55 },
 });
 
@@ -21,14 +21,14 @@ function onSplitChange() {
 }
 
 const CITY_LABELS = [
-  { name: '北京', lon: 116.397, lat: 39.909 },
-  { name: '上海', lon: 121.474, lat: 31.23 },
-  { name: '广州', lon: 113.264, lat: 23.129 },
-  { name: '成都', lon: 104.066, lat: 30.573 },
-  { name: '西安', lon: 108.94, lat: 34.341 },
-  { name: '拉萨', lon: 91.117, lat: 29.645 },
-  { name: '乌鲁木齐', lon: 87.617, lat: 43.793 },
-  { name: '哈尔滨', lon: 126.642, lat: 45.757 },
+  { name: "北京", lon: 116.397, lat: 39.909 },
+  { name: "上海", lon: 121.474, lat: 31.23 },
+  { name: "广州", lon: 113.264, lat: 23.129 },
+  { name: "成都", lon: 104.066, lat: 30.573 },
+  { name: "西安", lon: 108.94, lat: 34.341 },
+  { name: "拉萨", lon: 91.117, lat: 29.645 },
+  { name: "乌鲁木齐", lon: 87.617, lat: 43.793 },
+  { name: "哈尔滨", lon: 126.642, lat: 45.757 },
 ];
 
 let built: Cesium.Entity[] = [];
@@ -42,7 +42,7 @@ function clearBuilt() {
 }
 
 function applyLabels() {
-  activeFeature.value = 'label';
+  activeFeature.value = "label";
   clearBuilt();
   const v = viewer.value;
   if (!v) return;
@@ -52,9 +52,9 @@ function applyLabels() {
         position: Cesium.Cartesian3.fromDegrees(c.lon, c.lat, 0),
         label: {
           text: c.name,
-          font: 'bold 16px Microsoft YaHei, sans-serif',
+          font: "bold 16px Microsoft YaHei, sans-serif",
           fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.fromCssColorString('#2c3e50'),
+          outlineColor: Cesium.Color.fromCssColorString("#2c3e50"),
           outlineWidth: 4,
           style: Cesium.LabelStyle.FILL_AND_OUTLINE,
           pixelOffset: new Cesium.Cartesian2(0, -22),
@@ -67,7 +67,7 @@ function applyLabels() {
 }
 
 function applyLabelStyle() {
-  activeFeature.value = 'label-style';
+  activeFeature.value = "label-style";
   clearBuilt();
   const v = viewer.value;
   if (!v) return;
@@ -75,43 +75,55 @@ function applyLabelStyle() {
     v.entities.add({
       position: Cesium.Cartesian3.fromDegrees(108.94, 34.341, 0),
       label: {
-        text: '西安·钟楼商圈',
-        font: 'bold 18px Microsoft YaHei, sans-serif',
-        fillColor: Cesium.Color.fromCssColorString('#f1c40f'),
+        text: "西安·钟楼商圈",
+        font: "bold 18px Microsoft YaHei, sans-serif",
+        fillColor: Cesium.Color.fromCssColorString("#f1c40f"),
         // 背景 + 边框
         showBackground: true,
-        backgroundColor: Cesium.Color.fromCssColorString('#2c3e50').withAlpha(0.85),
+        backgroundColor:
+          Cesium.Color.fromCssColorString("#2c3e50").withAlpha(0.85),
         backgroundPadding: new Cesium.Cartesian2(12, 8),
         pixelOffset: new Cesium.Cartesian2(0, -40),
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        outlineColor: Cesium.Color.fromCssColorString('#7f8c8d'),
+        outlineColor: Cesium.Color.fromCssColorString("#7f8c8d"),
         outlineWidth: 2,
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
       },
     })
   );
-  statusText.value = '样式标注：背景框 + 边框 + 偏移 + 大字号';
+  statusText.value = "样式标注：背景框 + 边框 + 偏移 + 大字号";
 }
 
 function applyBillboards() {
-  activeFeature.value = 'billboard';
+  activeFeature.value = "billboard";
   clearBuilt();
   const v = viewer.value;
   if (!v) return;
-  const icons = ['airport.png', 'star.png', 'hospital.png', 'park.png', 'school.png', 'bank.png', 'town.png', 'harbor.png'];
+  const icons = [
+    "airport.png",
+    "star.png",
+    "hospital.png",
+    "park.png",
+    "school.png",
+    "bank.png",
+    "town.png",
+    "harbor.png",
+  ];
   CITY_LABELS.forEach((c, i) => {
     built.push(
       v.entities.add({
         position: Cesium.Cartesian3.fromDegrees(c.lon, c.lat, 0),
         billboard: {
-          image: Cesium.buildModuleUrl(`Assets/Textures/maki/${icons[i % icons.length]!}`),
+          image: Cesium.buildModuleUrl(
+            `Assets/Textures/maki/${icons[i % icons.length]!}`
+          ),
           scale: 1.6,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
         },
         label: {
           text: c.name,
-          font: '13px Microsoft YaHei, sans-serif',
+          font: "13px Microsoft YaHei, sans-serif",
           pixelOffset: new Cesium.Cartesian2(0, -22),
           fillColor: Cesium.Color.WHITE,
           outlineColor: Cesium.Color.BLACK,
@@ -122,11 +134,11 @@ function applyBillboards() {
       })
     );
   });
-  statusText.value = 'Billboard：maki 图标 + 名称标注';
+  statusText.value = "Billboard：maki 图标 + 名称标注";
 }
 
 function applyPin() {
-  activeFeature.value = 'pin';
+  activeFeature.value = "pin";
   clearBuilt();
   const v = viewer.value;
   if (!v) return;
@@ -145,13 +157,15 @@ function applyPin() {
       v.entities.add({
         position: Cesium.Cartesian3.fromDegrees(c.lon, c.lat, 0),
         billboard: {
-          image: pinBuilder.fromColor(colors[i % colors.length]!, 64).toDataURL(),
+          image: pinBuilder
+            .fromColor(colors[i % colors.length]!, 64)
+            .toDataURL(),
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           scale: 0.8,
         },
         label: {
           text: c.name,
-          font: '12px Microsoft YaHei, sans-serif',
+          font: "12px Microsoft YaHei, sans-serif",
           pixelOffset: new Cesium.Cartesian2(0, -20),
           fillColor: Cesium.Color.WHITE,
           outlineColor: Cesium.Color.BLACK,
@@ -162,11 +176,11 @@ function applyPin() {
       })
     );
   });
-  statusText.value = 'PinBuilder 图钉：按颜色区分城市';
+  statusText.value = "PinBuilder 图钉：按颜色区分城市";
 }
 
 function applyCollection() {
-  activeFeature.value = 'collection';
+  activeFeature.value = "collection";
   clearBuilt();
   const v = viewer.value;
   if (!v) return;
@@ -177,9 +191,13 @@ function applyCollection() {
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       collection.add({
-        position: Cesium.Cartesian3.fromDegrees(103 + c * 0.12, 30 + r * 0.12, 0),
+        position: Cesium.Cartesian3.fromDegrees(
+          103 + c * 0.12,
+          30 + r * 0.12,
+          0
+        ),
         text: `${r}-${c}`,
-        font: '12px monospace',
+        font: "12px monospace",
         fillColor: Cesium.Color.WHITE.withAlpha(0.9),
         outlineColor: Cesium.Color.BLACK,
         outlineWidth: 2,
@@ -198,9 +216,9 @@ function applyCollection() {
 }
 
 function applyClear() {
-  activeFeature.value = 'label';
+  activeFeature.value = "label";
   clearBuilt();
-  statusText.value = '已清除';
+  statusText.value = "已清除";
 }
 
 const codeMap: Record<string, () => string> = {
@@ -219,7 +237,7 @@ viewer.entities.add({
   },
 })`,
 
-  'label-style': () => `// ② 丰富样式：背景框/内边距/偏移
+  "label-style": () => `// ② 丰富样式：背景框/内边距/偏移
 label: {
   text: '西安·钟楼商圈',
   font: 'bold 18px Microsoft YaHei, sans-serif',
@@ -271,7 +289,7 @@ pixelOffset 做像素级微调。
 【要点】outline 描边能显著提升文字在地图上的可读性；
 中文指定字体（微软雅黑等）保证清晰。`,
 
-  'label-style': () => `【原理】showBackground 给文字加圆角背景板，
+  "label-style": () => `【原理】showBackground 给文字加圆角背景板，
 backgroundColor + backgroundPadding 控制样式与间距。
 组合：大字号 + 描边 + 背景板 = 高可读性的主标注。
 
@@ -293,7 +311,8 @@ fromColor(color, size) 生成指定颜色的图钉，适合：
 
 【要点】生成的 image 是 DataURI 字符串，可直接用于 billboard.image。`,
 
-  collection: () => `【原理】LabelCollection/BillboardCollection/PointPrimitiveCollection
+  collection:
+    () => `【原理】LabelCollection/BillboardCollection/PointPrimitiveCollection
 把海量同类要素合并为一个 Primitive 渲染：
 • 50 个 Entity Label ≈ 50 次 draw call
 • 1 个含 50 个成员的 LabelCollection ≈ 1 次 draw call
@@ -301,17 +320,46 @@ fromColor(color, size) 生成指定颜色的图钉，适合：
 【要点】万级标注场景必须使用集合；集合成员支持动态增删。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'label' ? 'primary' : 'default'" @click="applyLabels">基础标注</n-button>
-      <n-button size="small" :type="activeFeature === 'label-style' ? 'primary' : 'default'" @click="applyLabelStyle">样式标注</n-button>
-      <n-button size="small" :type="activeFeature === 'billboard' ? 'primary' : 'default'" @click="applyBillboards">图标广告牌</n-button>
-      <n-button size="small" :type="activeFeature === 'pin' ? 'primary' : 'default'" @click="applyPin">图钉 Pin</n-button>
-      <n-button size="small" :type="activeFeature === 'collection' ? 'primary' : 'default'" @click="applyCollection">集合批量 200</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'label' ? 'primary' : 'default'"
+        @click="applyLabels"
+        >基础标注</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'label-style' ? 'primary' : 'default'"
+        @click="applyLabelStyle"
+        >样式标注</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'billboard' ? 'primary' : 'default'"
+        @click="applyBillboards"
+        >图标广告牌</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'pin' ? 'primary' : 'default'"
+        @click="applyPin"
+        >图钉 Pin</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'collection' ? 'primary' : 'default'"
+        @click="applyCollection"
+        >集合批量 200</n-button
+      >
       <n-button size="small" quaternary @click="applyClear">清除</n-button>
     </div>
 
@@ -324,7 +372,11 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       @split-change="onSplitChange"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </template>
     </SplitViewer>
   </div>

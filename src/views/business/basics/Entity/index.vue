@@ -1,17 +1,17 @@
-<script setup lang="ts">
-import * as Cesium from 'cesium';
-import { ref, provide } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import SplitViewer from '@/components/base/SplitViewer.vue';
+﻿<script setup lang="ts">
+import * as Cesium from "cesium";
+import { ref, provide } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
-const activeFeature = ref('point');
-const statusText = ref('点击下方按钮，在场景中添加/移除各类实体。');
+const activeFeature = ref("point");
+const statusText = ref("点击下方按钮，在场景中添加/移除各类实体。");
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "tianditu-img",
   camera: { position: [108.945, 34.34, 14000], pitch: -50 },
 });
 
@@ -45,9 +45,9 @@ function toggleEntity(feature: string, entity: Cesium.Entity) {
 /* ============ 9 类实体 ============ */
 
 function applyPoint() {
-  activeFeature.value = 'point';
+  activeFeature.value = "point";
   toggleEntity(
-    'point',
+    "point",
     new Cesium.Entity({
       position: Cesium.Cartesian3.fromDegrees(108.94, 34.342, 0),
       point: {
@@ -61,16 +61,16 @@ function applyPoint() {
 }
 
 function applyLabel() {
-  activeFeature.value = 'label';
+  activeFeature.value = "label";
   toggleEntity(
-    'label',
+    "label",
     new Cesium.Entity({
       position: Cesium.Cartesian3.fromDegrees(108.9435, 34.3425, 0),
       label: {
-        text: '西安·钟楼',
-        font: '16px Microsoft YaHei, sans-serif',
+        text: "西安·钟楼",
+        font: "16px Microsoft YaHei, sans-serif",
         fillColor: Cesium.Color.WHITE,
-        outlineColor: Cesium.Color.fromCssColorString('#c0392b'),
+        outlineColor: Cesium.Color.fromCssColorString("#c0392b"),
         outlineWidth: 4,
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
         pixelOffset: new Cesium.Cartesian2(0, -30),
@@ -81,14 +81,14 @@ function applyLabel() {
 }
 
 function applyBillboard() {
-  activeFeature.value = 'billboard';
+  activeFeature.value = "billboard";
   toggleEntity(
-    'billboard',
+    "billboard",
     new Cesium.Entity({
       position: Cesium.Cartesian3.fromDegrees(108.947, 34.341, 0),
       billboard: {
         // Cesium 内置 maki 图标（本地资源）
-        image: Cesium.buildModuleUrl('Assets/Textures/maki/star.png'),
+        image: Cesium.buildModuleUrl("Assets/Textures/maki/star.png"),
         scale: 1.4,
         color: Cesium.Color.YELLOW,
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
@@ -98,15 +98,18 @@ function applyBillboard() {
 }
 
 function applyPolyline() {
-  activeFeature.value = 'polyline';
+  activeFeature.value = "polyline";
   toggleEntity(
-    'polyline',
+    "polyline",
     new Cesium.Entity({
       polyline: {
         positions: Cesium.Cartesian3.fromDegreesArray([
-          108.94, 34.342, // 钟楼
-          108.945, 34.341, // 南大街
-          108.952, 34.3395, // 南门
+          108.94,
+          34.342, // 钟楼
+          108.945,
+          34.341, // 南大街
+          108.952,
+          34.3395, // 南门
         ]),
         width: 6,
         material: new Cesium.PolylineGlowMaterialProperty({
@@ -120,18 +123,15 @@ function applyPolyline() {
 }
 
 function applyPolygon() {
-  activeFeature.value = 'polygon';
+  activeFeature.value = "polygon";
   toggleEntity(
-    'polygon',
+    "polygon",
     new Cesium.Entity({
       polygon: {
         hierarchy: Cesium.Cartesian3.fromDegreesArray([
-          108.955, 34.338,
-          108.962, 34.338,
-          108.962, 34.343,
-          108.955, 34.343,
+          108.955, 34.338, 108.962, 34.338, 108.962, 34.343, 108.955, 34.343,
         ]),
-        material: Cesium.Color.fromCssColorString('#27ae60').withAlpha(0.5),
+        material: Cesium.Color.fromCssColorString("#27ae60").withAlpha(0.5),
         outline: true,
         outlineColor: Cesium.Color.WHITE,
         height: 0,
@@ -141,20 +141,18 @@ function applyPolygon() {
 }
 
 function applyWall() {
-  activeFeature.value = 'wall';
+  activeFeature.value = "wall";
   toggleEntity(
-    'wall',
+    "wall",
     new Cesium.Entity({
       wall: {
         positions: Cesium.Cartesian3.fromDegreesArrayHeights([
-          108.93, 34.336, 0,
-          108.934, 34.336, 0,
-          108.934, 34.340, 0,
-          108.93, 34.340, 0,
+          108.93, 34.336, 0, 108.934, 34.336, 0, 108.934, 34.34, 0, 108.93,
+          34.34, 0,
         ]),
         maximumHeights: [80, 60, 80, 60],
         minimumHeights: [0, 0, 0, 0],
-        material: Cesium.Color.fromCssColorString('#e67e22').withAlpha(0.7),
+        material: Cesium.Color.fromCssColorString("#e67e22").withAlpha(0.7),
         outline: true,
         outlineColor: Cesium.Color.WHITE,
       },
@@ -163,14 +161,14 @@ function applyWall() {
 }
 
 function applyBox() {
-  activeFeature.value = 'box';
+  activeFeature.value = "box";
   toggleEntity(
-    'box',
+    "box",
     new Cesium.Entity({
       position: Cesium.Cartesian3.fromDegrees(108.922, 34.344, 100),
       box: {
         dimensions: new Cesium.Cartesian3(300, 200, 200), // 长宽高(米)
-        material: Cesium.Color.fromCssColorString('#8e44ad').withAlpha(0.8),
+        material: Cesium.Color.fromCssColorString("#8e44ad").withAlpha(0.8),
         outline: true,
         outlineColor: Cesium.Color.WHITE,
       },
@@ -179,14 +177,14 @@ function applyBox() {
 }
 
 function applyEllipsoid() {
-  activeFeature.value = 'ellipsoid';
+  activeFeature.value = "ellipsoid";
   toggleEntity(
-    'ellipsoid',
+    "ellipsoid",
     new Cesium.Entity({
       position: Cesium.Cartesian3.fromDegrees(108.97, 34.218, 0), // 大雁塔
       ellipsoid: {
         radii: new Cesium.Cartesian3(300, 300, 200), // 三轴半径
-        material: Cesium.Color.fromCssColorString('#3498db').withAlpha(0.45),
+        material: Cesium.Color.fromCssColorString("#3498db").withAlpha(0.45),
         outline: true,
         outlineColor: Cesium.Color.WHITE,
       },
@@ -195,19 +193,17 @@ function applyEllipsoid() {
 }
 
 function applyCorridor() {
-  activeFeature.value = 'corridor';
+  activeFeature.value = "corridor";
   toggleEntity(
-    'corridor',
+    "corridor",
     new Cesium.Entity({
       corridor: {
         positions: Cesium.Cartesian3.fromDegreesArray([
-          108.92, 34.35,
-          108.928, 34.352,
-          108.936, 34.349,
+          108.92, 34.35, 108.928, 34.352, 108.936, 34.349,
         ]),
         width: 80, // 走廊宽度(米)
         cornerType: Cesium.CornerType.ROUNDED,
-        material: Cesium.Color.fromCssColorString('#f1c40f').withAlpha(0.5),
+        material: Cesium.Color.fromCssColorString("#f1c40f").withAlpha(0.5),
         outline: true,
         outlineColor: Cesium.Color.WHITE,
       },
@@ -216,12 +212,12 @@ function applyCorridor() {
 }
 
 function applyClear() {
-  activeFeature.value = 'point';
+  activeFeature.value = "point";
   const v = viewer.value;
   if (!v) return;
   v.entities.removeAll();
   added.clear();
-  statusText.value = '已清除全部实体';
+  statusText.value = "已清除全部实体";
 }
 
 const codeMap: Record<string, () => string> = {
@@ -342,7 +338,8 @@ viewer.entities.add({
 };
 
 const explainMap: Record<string, () => string> = {
-  point: () => `【原理】Entity 是 Cesium 的“声明式”数据模型：一个对象 = 一个图形要素。
+  point:
+    () => `【原理】Entity 是 Cesium 的“声明式”数据模型：一个对象 = 一个图形要素。
 Point 在屏幕上以固定像素大小绘制，不随缩放改变。
 
 【通用能力】所有 Entity 支持：
@@ -382,7 +379,8 @@ maximumHeights/minimumHeights 可为每个顶点单独指定，
 
 【要点】默认朝向与经纬网格对齐，旋转可用 orientation 属性。`,
 
-  ellipsoid: () => `【原理】Ellipsoid 生成三轴半径可调的椭球体（球体为三轴相等）。
+  ellipsoid:
+    () => `【原理】Ellipsoid 生成三轴半径可调的椭球体（球体为三轴相等）。
 常用于大气范围、传感器覆盖、缓冲区体等抽象表达。`,
 
   corridor: () => `【原理】Corridor 沿线生成指定宽度的“带状体”，
@@ -390,21 +388,70 @@ cornerType 控制拐角（ROUNDED 圆角 / MITERED 斜接 / BEVELED 切角），
 适合表达道路、管道、航线走廊。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'point' ? 'primary' : 'default'" @click="applyPoint">点 Point</n-button>
-      <n-button size="small" :type="activeFeature === 'label' ? 'primary' : 'default'" @click="applyLabel">标注 Label</n-button>
-      <n-button size="small" :type="activeFeature === 'billboard' ? 'primary' : 'default'" @click="applyBillboard">图标 Billboard</n-button>
-      <n-button size="small" :type="activeFeature === 'polyline' ? 'primary' : 'default'" @click="applyPolyline">线 Polyline</n-button>
-      <n-button size="small" :type="activeFeature === 'polygon' ? 'primary' : 'default'" @click="applyPolygon">面 Polygon</n-button>
-      <n-button size="small" :type="activeFeature === 'wall' ? 'primary' : 'default'" @click="applyWall">墙 Wall</n-button>
-      <n-button size="small" :type="activeFeature === 'box' ? 'primary' : 'default'" @click="applyBox">盒 Box</n-button>
-      <n-button size="small" :type="activeFeature === 'ellipsoid' ? 'primary' : 'default'" @click="applyEllipsoid">球 Ellipsoid</n-button>
-      <n-button size="small" :type="activeFeature === 'corridor' ? 'primary' : 'default'" @click="applyCorridor">走廊 Corridor</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'point' ? 'primary' : 'default'"
+        @click="applyPoint"
+        >点 Point</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'label' ? 'primary' : 'default'"
+        @click="applyLabel"
+        >标注 Label</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'billboard' ? 'primary' : 'default'"
+        @click="applyBillboard"
+        >图标 Billboard</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'polyline' ? 'primary' : 'default'"
+        @click="applyPolyline"
+        >线 Polyline</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'polygon' ? 'primary' : 'default'"
+        @click="applyPolygon"
+        >面 Polygon</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'wall' ? 'primary' : 'default'"
+        @click="applyWall"
+        >墙 Wall</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'box' ? 'primary' : 'default'"
+        @click="applyBox"
+        >盒 Box</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'ellipsoid' ? 'primary' : 'default'"
+        @click="applyEllipsoid"
+        >球 Ellipsoid</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'corridor' ? 'primary' : 'default'"
+        @click="applyCorridor"
+        >走廊 Corridor</n-button
+      >
       <n-button size="small" quaternary @click="applyClear">全部清除</n-button>
     </div>
 
@@ -417,7 +464,11 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       @split-change="onSplitChange"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </template>
     </SplitViewer>
   </div>

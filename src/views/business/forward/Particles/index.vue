@@ -1,17 +1,17 @@
-<script setup lang="ts">
-import * as Cesium from 'cesium';
-import { ref, provide } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import SplitViewer from '@/components/base/SplitViewer.vue';
+﻿<script setup lang="ts">
+import * as Cesium from "cesium";
+import { ref, provide } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
-const activeFeature = ref('fire');
-const statusText = ref('粒子系统：火焰 / 喷泉 / 降雨 / 降雪。');
+const activeFeature = ref("fire");
+const statusText = ref("粒子系统：火焰 / 喷泉 / 降雨 / 降雪。");
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "tianditu-img",
   camera: { position: [108.94, 34.34, 6000], pitch: -50 },
   // 粒子系统依赖时钟推进（frameState.time 变化 → dt > 0 → 发射粒子），必须启用动画
   clock: { shouldAnimate: true },
@@ -33,14 +33,14 @@ function removeAll() {
 
 /** 生成圆形渐变粒子纹理（DataURI） */
 function makeParticleImage(): string {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = 32;
   canvas.height = 32;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext("2d")!;
   const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-  g.addColorStop(0, 'rgba(255,255,255,1)');
-  g.addColorStop(0.4, 'rgba(255,255,255,0.8)');
-  g.addColorStop(1, 'rgba(255,255,255,0)');
+  g.addColorStop(0, "rgba(255,255,255,1)");
+  g.addColorStop(0.4, "rgba(255,255,255,0.8)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 32, 32);
   return canvas.toDataURL();
@@ -52,11 +52,7 @@ const particleImage = makeParticleImage();
 function makeGravity(g: number): (p: Cesium.Particle, dt: number) => void {
   const dv = new Cesium.Cartesian3();
   return (p, dt) => {
-    Cesium.Cartesian3.multiplyByScalar(
-      new Cesium.Cartesian3(0, 0, g),
-      dt,
-      dv
-    );
+    Cesium.Cartesian3.multiplyByScalar(new Cesium.Cartesian3(0, 0, g), dt, dv);
     p.velocity = Cesium.Cartesian3.add(p.velocity, dv, p.velocity);
   };
 }
@@ -73,7 +69,7 @@ function flyTo(pos: Cesium.Cartesian3, height = 2500) {
 }
 
 function applyFire() {
-  activeFeature.value = 'fire';
+  activeFeature.value = "fire";
   removeAll();
   const v = viewer.value;
   if (!v) return;
@@ -81,8 +77,8 @@ function applyFire() {
   const system = new Cesium.ParticleSystem({
     modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(pos),
     emitter: new Cesium.ConeEmitter(Cesium.Math.toRadians(20)), // 锥形向上喷射
-    startColor: Cesium.Color.fromCssColorString('#ff9f43').withAlpha(0.9),
-    endColor: Cesium.Color.fromCssColorString('#e74c3c').withAlpha(0.1),
+    startColor: Cesium.Color.fromCssColorString("#ff9f43").withAlpha(0.9),
+    endColor: Cesium.Color.fromCssColorString("#e74c3c").withAlpha(0.1),
     startScale: 1.2,
     endScale: 0.1,
     imageSize: new Cesium.Cartesian2(14, 14),
@@ -95,11 +91,11 @@ function applyFire() {
   v.scene.primitives.add(system);
   systems.push(system);
   flyTo(pos);
-  statusText.value = '火焰：ConeEmitter 锥形发射 + 颜色渐变 + 缩小消失';
+  statusText.value = "火焰：ConeEmitter 锥形发射 + 颜色渐变 + 缩小消失";
 }
 
 function applyFountain() {
-  activeFeature.value = 'fountain';
+  activeFeature.value = "fountain";
   removeAll();
   const v = viewer.value;
   if (!v) return;
@@ -107,8 +103,8 @@ function applyFountain() {
   const system = new Cesium.ParticleSystem({
     modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(pos),
     emitter: new Cesium.SphereEmitter(2), // 球面均匀喷射
-    startColor: Cesium.Color.fromCssColorString('#a29bfe').withAlpha(0.95),
-    endColor: Cesium.Color.fromCssColorString('#dfe6e9').withAlpha(0),
+    startColor: Cesium.Color.fromCssColorString("#a29bfe").withAlpha(0.95),
+    endColor: Cesium.Color.fromCssColorString("#dfe6e9").withAlpha(0),
     startScale: 0.6,
     endScale: 0.05,
     imageSize: new Cesium.Cartesian2(12, 12),
@@ -121,11 +117,11 @@ function applyFountain() {
   v.scene.primitives.add(system);
   systems.push(system);
   flyTo(pos, 1800);
-  statusText.value = '喷泉：SphereEmitter 球面喷射 + 重力回落地表';
+  statusText.value = "喷泉：SphereEmitter 球面喷射 + 重力回落地表";
 }
 
 function applyRain() {
-  activeFeature.value = 'rain';
+  activeFeature.value = "rain";
   removeAll();
   const v = viewer.value;
   if (!v) return;
@@ -133,12 +129,12 @@ function applyRain() {
   const system = new Cesium.ParticleSystem({
     modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(pos),
     emitter: new Cesium.BoxEmitter(new Cesium.Cartesian3(600, 600, 100)), // 大片区域
-    startColor: Cesium.Color.fromCssColorString('#74b9ff').withAlpha(0.5),
-    endColor: Cesium.Color.fromCssColorString('#0984e3').withAlpha(0),
+    startColor: Cesium.Color.fromCssColorString("#74b9ff").withAlpha(0.5),
+    endColor: Cesium.Color.fromCssColorString("#0984e3").withAlpha(0),
     imageSize: new Cesium.Cartesian2(4, 4),
     startScale: 0.6,
     endScale: 1,
-    speed: 120,       // 高速下落
+    speed: 120, // 高速下落
     updateCallback: makeGravity(-60),
     emissionRate: 400,
     lifetime: 30,
@@ -147,11 +143,11 @@ function applyRain() {
   v.scene.primitives.add(system);
   systems.push(system);
   flyTo(pos, 2500);
-  statusText.value = '降雨：BoxEmitter 大面积区域 + 高速下落粒子';
+  statusText.value = "降雨：BoxEmitter 大面积区域 + 高速下落粒子";
 }
 
 function applySnow() {
-  activeFeature.value = 'snow';
+  activeFeature.value = "snow";
   removeAll();
   const v = viewer.value;
   if (!v) return;
@@ -164,7 +160,7 @@ function applySnow() {
     imageSize: new Cesium.Cartesian2(6, 6),
     startScale: 1,
     endScale: 0.4,
-    speed: 8,        // 缓慢飘落
+    speed: 8, // 缓慢飘落
     updateCallback: makeGravity(-2),
     emissionRate: 150,
     lifetime: 40,
@@ -173,13 +169,13 @@ function applySnow() {
   v.scene.primitives.add(system);
   systems.push(system);
   flyTo(pos, 2500);
-  statusText.value = '降雪：低速飘落 + 大面积 + 柔白粒子';
+  statusText.value = "降雪：低速飘落 + 大面积 + 柔白粒子";
 }
 
 function applyClear() {
-  activeFeature.value = 'fire';
+  activeFeature.value = "fire";
   removeAll();
-  statusText.value = '已清除粒子系统';
+  statusText.value = "已清除粒子系统";
 }
 
 const codeMap: Record<string, () => string> = {
@@ -275,20 +271,45 @@ BoxEmitter 用大范围（600×600m）覆盖视野，形成“下雨”氛围。
 【要点】调整 speed/gravity/emissionRate 三参数即可在
 雨/雪/沙尘等天气效果间切换。`,
 
-  clear: () => `【原理】粒子系统是 Primitive 子类，scene.primitives.remove() 即可回收。
+  clear:
+    () => `【原理】粒子系统是 Primitive 子类，scene.primitives.remove() 即可回收。
 注意：反复创建/销毁大量粒子系统会造成 GPU 内存抖动，应复用实例。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'fire' ? 'primary' : 'default'" @click="applyFire">火焰</n-button>
-      <n-button size="small" :type="activeFeature === 'fountain' ? 'primary' : 'default'" @click="applyFountain">喷泉</n-button>
-      <n-button size="small" :type="activeFeature === 'rain' ? 'primary' : 'default'" @click="applyRain">降雨</n-button>
-      <n-button size="small" :type="activeFeature === 'snow' ? 'primary' : 'default'" @click="applySnow">降雪</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'fire' ? 'primary' : 'default'"
+        @click="applyFire"
+        >火焰</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'fountain' ? 'primary' : 'default'"
+        @click="applyFountain"
+        >喷泉</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'rain' ? 'primary' : 'default'"
+        @click="applyRain"
+        >降雨</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'snow' ? 'primary' : 'default'"
+        @click="applySnow"
+        >降雪</n-button
+      >
       <n-button size="small" quaternary @click="applyClear">清除</n-button>
     </div>
 
@@ -301,7 +322,11 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       @split-change="onSplitChange"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </template>
     </SplitViewer>
   </div>

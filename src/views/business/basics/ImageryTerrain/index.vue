@@ -1,17 +1,22 @@
 <script setup lang="ts">
-import * as Cesium from 'cesium';
-import { ref, provide } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import SplitViewer from '@/components/base/SplitViewer.vue';
+import * as Cesium from "cesium";
+import { ref, provide } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
+import {
+  createTiandituVecLayers,
+  createTiandituImgLayers,
+  TIANDITU_TK,
+} from "@/utils/tianditu";
 
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
-const activeFeature = ref('esri-img');
-const statusText = ref('当前底图：Esri 全球影像');
+const activeFeature = ref("tianditu-vec");
+const statusText = ref("当前底图：天地图街道图（矢量）");
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "tianditu-vec",
   camera: { position: [108.9, 34.2, 3000000], pitch: -60 },
 });
 
@@ -23,62 +28,54 @@ function onSplitChange() {
 let terrainOn = false;
 let overlayLayer: Cesium.ImageryLayer | null = null;
 
-/** 替换当前所有影像图层 */
-function setBaseLayer(provider: Cesium.ImageryProvider) {
+/** 替换当前所有影像图层（支持多层） */
+function setBaseLayers(layers: Cesium.ImageryLayer[]) {
   const v = viewer.value;
   if (!v) return;
   v.imageryLayers.removeAll();
-  v.imageryLayers.add(new Cesium.ImageryLayer(provider));
+  for (const layer of layers) {
+    v.imageryLayers.add(layer);
+  }
 }
 
-function applyEsriImage() {
-  activeFeature.value = 'esri-img';
-  setBaseLayer(
-    new Cesium.UrlTemplateImageryProvider({
-      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      credit: 'Imagery © Esri, Maxar, Earthstar Geographics',
-      maximumLevel: 19,
-    })
-  );
-  statusText.value = '当前底图：Esri 全球影像（卫星图）';
+function applyTiandituImg() {
+  activeFeature.value = "tianditu-img";
+  setBaseLayers(createTiandituImgLayers());
+  statusText.value = "当前底图：天地图影像（卫星图 + 注记）";
 }
 
-function applyEsriStreet() {
-  activeFeature.value = 'esri-map';
-  setBaseLayer(
-    new Cesium.UrlTemplateImageryProvider({
-      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-      credit: '© Esri, HERE, Garmin, OpenStreetMap contributors',
-      maximumLevel: 19,
-    })
-  );
-  statusText.value = '当前底图：Esri 街道图（矢量风格）';
+function applyTiandituVec() {
+  activeFeature.value = "tianditu-vec";
+  setBaseLayers(createTiandituVecLayers());
+  statusText.value = "当前底图：天地图街道图（矢量 + 注记）";
 }
 
 function applyNaturalEarth() {
-  activeFeature.value = 'natural';
+  activeFeature.value = "natural";
   const v = viewer.value;
   if (!v) return;
   v.imageryLayers.removeAll();
   // 使用 Cesium 本地内置的自然地球纹理（无需网络）
-  Cesium.TileMapServiceImageryProvider.fromUrl(Cesium.buildModuleUrl('Assets/Textures/NaturalEarthII'))
+  Cesium.TileMapServiceImageryProvider.fromUrl(
+    Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII")
+  )
     .then((p) => v.imageryLayers.add(new Cesium.ImageryLayer(p)))
     .catch((e) => console.error(e));
-  statusText.value = '当前底图：Natural Earth（本地纹理）';
+  statusText.value = "当前底图：Natural Earth（本地纹理）";
 }
 
 function applyNoBase() {
-  activeFeature.value = 'none';
+  activeFeature.value = "none";
   const v = viewer.value;
   if (!v) return;
   v.imageryLayers.removeAll();
   // 无影像时地球底色可自定义（此处用深蓝海洋色）
-  v.scene.globe.baseColor = Cesium.Color.fromCssColorString('#1e3a5f');
-  statusText.value = '当前底图：无（纯椭球 + 经纬网）';
+  v.scene.globe.baseColor = Cesium.Color.fromCssColorString("#1e3a5f");
+  statusText.value = "当前底图：无（纯椭球 + 经纬网）";
 }
 
 function applyTerrain() {
-  activeFeature.value = 'terrain';
+  activeFeature.value = "terrain";
   const v = viewer.value;
   if (!v) return;
   terrainOn = !terrainOn;
@@ -90,52 +87,53 @@ function applyTerrain() {
       orientation: { heading: 0, pitch: Cesium.Math.toRadians(-45), roll: 0 },
       duration: 2,
     });
-    statusText.value = '地形：Cesium World Terrain（已飞往珠峰）';
+    statusText.value = "地形：Cesium World Terrain（已飞往珠峰）";
   } else {
     v.terrainProvider = new Cesium.EllipsoidTerrainProvider();
-    statusText.value = '地形：已还原为椭球面（无地形）';
+    statusText.value = "地形：已还原为椭球面（无地形）";
   }
 }
 
 function applyOverlay() {
-  activeFeature.value = 'overlay';
+  activeFeature.value = "overlay";
   const v = viewer.value;
   if (!v) return;
   if (overlayLayer) {
     v.imageryLayers.remove(overlayLayer);
     overlayLayer = null;
-    statusText.value = '叠加层：已移除';
+    statusText.value = "叠加层：已移除";
     return;
   }
-  // 在现有底图上叠加一层街道图，半透明显示
-  overlayLayer = new Cesium.ImageryLayer(
-    new Cesium.UrlTemplateImageryProvider({
-      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-      credit: '© Esri',
-      maximumLevel: 19,
-    })
-  );
-  overlayLayer.alpha = 0.5; // 图层透明度
-  overlayLayer.brightness = 1.1;
+  // 在现有底图上叠加一层天地图街道注记，半透明显示
+  const layers = createTiandituVecLayers();
+  overlayLayer = layers[1]!; // 注记层
+  overlayLayer.alpha = 0.7;
   v.imageryLayers.add(overlayLayer);
-  statusText.value = '叠加层：街道图 alpha=0.5 覆盖在影像上';
+  statusText.value = "叠加层：天地图注记 alpha=0.7 覆盖在影像上";
 }
 
 const codeMap: Record<string, () => string> = {
-  'esri-img': () => `// ① Esri 全球影像（无 token，国内可用）
-const provider = new Cesium.UrlTemplateImageryProvider({
-  // 注意瓦片顺序是 {z}/{y}/{x}
-  url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  maximumLevel: 19,
+  "tianditu-img": () => `// ① 天地图影像（WMTS，需 tk）
+const tk = '${TIANDITU_TK}'
+const imgProvider = new Cesium.WebMapTileServiceImageryProvider({
+  url: \`https://t{s}.tianditu.gov.cn/img_w/wmts?service=wmts&request=GetTile&version=1.0.0&LAYER=img&tileMatrixSet=w&TileMatrix={TileMatrix}&TileRow={TileRow}&TileCol={TileCol}&style=default&format=tiles&tk=\${tk}\`,
+  subdomains: ['0','1','2','3','4','5','6','7'],
+  layer: 'img', style: 'default', format: 'tiles',
+  tileMatrixSetID: 'w', maximumLevel: 18,
 })
-viewer.imageryLayers.add(new Cesium.ImageryLayer(provider))`,
+// 影像注记 cia（同上，layer 改为 'cia'）
+viewer.imageryLayers.add(new Cesium.ImageryLayer(imgProvider))`,
 
-  'esri-map': () => `// ② Esri 街道图（矢量风格底图）
-const provider = new Cesium.UrlTemplateImageryProvider({
-  url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-  maximumLevel: 19,
+  "tianditu-vec": () => `// ② 天地图街道矢量（WMTS，需 tk）
+const tk = '${TIANDITU_TK}'
+const vecProvider = new Cesium.WebMapTileServiceImageryProvider({
+  url: \`https://t{s}.tianditu.gov.cn/vec_w/wmts?service=wmts&request=GetTile&version=1.0.0&LAYER=vec&tileMatrixSet=w&TileMatrix={TileMatrix}&TileRow={TileRow}&TileCol={TileCol}&style=default&format=tiles&tk=\${tk}\`,
+  subdomains: ['0','1','2','3','4','5','6','7'],
+  layer: 'vec', style: 'default', format: 'tiles',
+  tileMatrixSetID: 'w', maximumLevel: 18,
 })
-viewer.imageryLayers.add(new Cesium.ImageryLayer(provider))`,
+// 矢量注记 cva（同上，layer 改为 'cva'）
+viewer.imageryLayers.add(new Cesium.ImageryLayer(vecProvider))`,
 
   none: () => `// ③ 无影像：纯椭球 + 可自定义底色
 viewer.imageryLayers.removeAll()
@@ -168,25 +166,29 @@ viewer.imageryLayers.add(overlay)  // 叠在现有图层之上`,
 };
 
 const explainMap: Record<string, () => string> = {
-  'esri-img': () => `【原理】UrlTemplateImageryProvider 按 {z}/{x}/{y} 模板拼接瓦片 URL。
-瓦片金字塔：z 为缩放级别，x/y 为行列号。
-ImageryLayer 将 Provider 包装成可叠加、可调透明度/亮度的图层。
+  "tianditu-img":
+    () => `【原理】天地图影像采用 WMTS 标准服务，WebMapTileServiceImageryProvider 加载。
+天地图影像 = img（影像底图）+ cia（影像注记）两层叠加。
+subdomains t0-t7 做负载均衡，tk 为开发者密钥。
 
-【要点】Esri World Imagery 无 key 即可访问，适合国内开发调试；
-生产环境建议使用自有底图服务或天地图/Azure 地图。`,
+【要点】天地图是国家地理信息公共服务平台，国内访问速度快，
+符合国内地图规范，适合生产环境使用。最大级别 18 级。`,
 
-  'esri-map': () => `【原理】与影像图同构，只是换了瓦片服务（矢量渲染后的栅格图）。
-多底图切换的本质：移除旧图层 → 添加新图层。
+  "tianditu-vec": () => `【原理】天地图矢量街道同样采用 WMTS 服务。
+矢量街道 = vec（矢量底图）+ cva（矢量注记）两层叠加。
+底图是预渲染的栅格瓦片，注记层单独叠加便于控制。
 
-【要点】imageryLayers.removeAll() 清空；add() 追加到最上层；
-layers.indexOf() 可调整顺序。`,
+【要点】多底图切换的本质：移除旧图层 → 添加新图层。
+imageryLayers.removeAll() 清空；add() 追加到最上层。
+天地图矢量图适合作为业务系统的默认底图。`,
 
   none: () => `【原理】移除影像后地球只剩椭球体，globe.baseColor 决定底色。
 这是“白膜/暗夜模式”等场景的基础做法。
 
 【要点】经纬网（globe.showGroundAtmosphere）与网格开关可继续叠加。`,
 
-  natural: () => `【原理】Cesium 安装包内置了 Natural Earth 全球纹理（Build/Cesium/Assets/Textures）。
+  natural:
+    () => `【原理】Cesium 安装包内置了 Natural Earth 全球纹理（Build/Cesium/Assets/Textures）。
 buildModuleUrl() 把资源路径解析到 CESIUM_BASE_URL 下，完全离线可用。
 
 【要点】这是快速验证/无网环境下的兜底底图方案。`,
@@ -205,18 +207,52 @@ alpha 不透明度 / brightness 亮度 / contrast 对比度 / saturation 饱和�
 【观察】当前在影像上叠加 50% 透明度的街道图，道路与卫星影像融合显示。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'esri-img' ? 'primary' : 'default'" @click="applyEsriImage">Esri 影像</n-button>
-      <n-button size="small" :type="activeFeature === 'esri-map' ? 'primary' : 'default'" @click="applyEsriStreet">Esri 街道图</n-button>
-      <n-button size="small" :type="activeFeature === 'natural' ? 'primary' : 'default'" @click="applyNaturalEarth">Natural Earth</n-button>
-      <n-button size="small" :type="activeFeature === 'none' ? 'primary' : 'default'" @click="applyNoBase">无底图</n-button>
-      <n-button size="small" :type="activeFeature === 'terrain' ? 'primary' : 'default'" @click="applyTerrain">世界地形：{{ terrainOn ? '开' : '关' }}</n-button>
-      <n-button size="small" :type="activeFeature === 'overlay' ? 'primary' : 'default'" @click="applyOverlay">{{ overlayLayer ? '移除叠加层' : '叠加街道图' }}</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'tianditu-img' ? 'primary' : 'default'"
+        @click="applyTiandituImg"
+        >天地图影像</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'tianditu-vec' ? 'primary' : 'default'"
+        @click="applyTiandituVec"
+        >天地图街道</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'natural' ? 'primary' : 'default'"
+        @click="applyNaturalEarth"
+        >Natural Earth</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'none' ? 'primary' : 'default'"
+        @click="applyNoBase"
+        >无底图</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'terrain' ? 'primary' : 'default'"
+        @click="applyTerrain"
+        >世界地形：{{ terrainOn ? "开" : "关" }}</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'overlay' ? 'primary' : 'default'"
+        @click="applyOverlay"
+        >{{ overlayLayer ? "移除叠加层" : "叠加注记层" }}</n-button
+      >
     </div>
 
     <SplitViewer
@@ -228,7 +264,11 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       @split-change="onSplitChange"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </template>
     </SplitViewer>
   </div>

@@ -1,17 +1,17 @@
-<script setup lang="ts">
-import * as Cesium from 'cesium';
-import { ref, provide } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import SplitViewer from '@/components/base/SplitViewer.vue';
+﻿<script setup lang="ts">
+import * as Cesium from "cesium";
+import { ref, provide } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
-const activeFeature = ref('load');
-const statusText = ref('glTF 模型：加载、朝向、缩放与骨骼动画。');
+const activeFeature = ref("load");
+const statusText = ref("glTF 模型：加载、朝向、缩放与骨骼动画。");
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "tianditu-img",
   camera: { position: [108.94, 34.34, 1500], pitch: -40 },
 });
 
@@ -22,7 +22,7 @@ function onSplitChange() {
 
 // 公开 glTF 示例模型（Khronos 官方 CesiumMan，jsdelivr CDN）
 const CESIUM_MAN_URL =
-  'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/CesiumMan/glTF-Binary/CesiumMan.glb';
+  "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/CesiumMan/glTF-Binary/CesiumMan.glb";
 
 const BASE_POS = Cesium.Cartesian3.fromDegrees(108.94, 34.34, 0);
 // 站地点位（东-北-上 局部坐标系）
@@ -49,11 +49,11 @@ function removeAll() {
 }
 
 async function applyLoad() {
-  activeFeature.value = 'load';
+  activeFeature.value = "load";
   removeAll();
   const v = viewer.value;
   if (!v) return;
-  statusText.value = '正在加载 CesiumMan 模型…';
+  statusText.value = "正在加载 CesiumMan 模型…";
   try {
     model = await Cesium.Model.fromGltfAsync({
       url: CESIUM_MAN_URL,
@@ -61,15 +61,15 @@ async function applyLoad() {
       scale: 1,
     });
     v.scene.primitives.add(model);
-    statusText.value = '模型已加载（Model.fromGltfAsync + scene.primitives）';
+    statusText.value = "模型已加载（Model.fromGltfAsync + scene.primitives）";
   } catch (e) {
     console.error(e);
-    statusText.value = '加载失败：请检查网络';
+    statusText.value = "加载失败：请检查网络";
   }
 }
 
 function applyEntityModel() {
-  activeFeature.value = 'entity-model';
+  activeFeature.value = "entity-model";
   removeAll();
   const v = viewer.value;
   if (!v) return;
@@ -79,15 +79,20 @@ function applyEntityModel() {
       BASE_POS,
       new Cesium.HeadingPitchRoll(Cesium.Math.toRadians(45), 0, 0)
     ),
-    model: { uri: CESIUM_MAN_URL, scale: 1, silhouetteColor: Cesium.Color.YELLOW, silhouetteSize: 2 },
+    model: {
+      uri: CESIUM_MAN_URL,
+      scale: 1,
+      silhouetteColor: Cesium.Color.YELLOW,
+      silhouetteSize: 2,
+    },
   });
-  statusText.value = 'Entity.model 方式加载（自带拾取与信息）';
+  statusText.value = "Entity.model 方式加载（自带拾取与信息）";
 }
 
 function applyAnimate() {
-  activeFeature.value = 'animation';
+  activeFeature.value = "animation";
   if (!model) {
-    statusText.value = '请先加载模型';
+    statusText.value = "请先加载模型";
     return;
   }
   if (!animating) {
@@ -101,18 +106,18 @@ function applyAnimate() {
       loop: Cesium.ModelAnimationLoop.REPEAT,
     });
     animating = true;
-    statusText.value = '▶ 行走动画播放中（activeAnimations.add, index: 0）';
+    statusText.value = "▶ 行走动画播放中（activeAnimations.add, index: 0）";
   } else {
     // 1.145：ModelAnimation 无 stop()，改用集合 remove
     if (activeAnimation) model.activeAnimations.remove(activeAnimation);
     activeAnimation = null;
     animating = false;
-    statusText.value = '⏸ 动画已暂停';
+    statusText.value = "⏸ 动画已暂停";
   }
 }
 
 function applySpeed() {
-  activeFeature.value = 'animation';
+  activeFeature.value = "animation";
   if (!model) return;
   animationSpeed = animationSpeed >= 3 ? 0.5 : animationSpeed + 0.5;
   // multiplier 为只读属性：移除后用新倍速重新加入
@@ -126,9 +131,9 @@ function applySpeed() {
 }
 
 function applyScale() {
-  activeFeature.value = 'scale';
+  activeFeature.value = "scale";
   if (!model) {
-    statusText.value = '请先加载模型';
+    statusText.value = "请先加载模型";
     return;
   }
   model.scale = model.scale > 2 ? 1 : model.scale * 1.5;
@@ -137,9 +142,9 @@ function applyScale() {
 
 let headingDeg = 0;
 function applyRotate() {
-  activeFeature.value = 'node';
+  activeFeature.value = "node";
   if (!model) {
-    statusText.value = '请先加载模型';
+    statusText.value = "请先加载模型";
     return;
   }
   headingDeg = (headingDeg + 30) % 360;
@@ -156,10 +161,10 @@ function applyRotate() {
 }
 
 function applyClear() {
-  activeFeature.value = 'load';
+  activeFeature.value = "load";
   removeAll();
   animating = false;
-  statusText.value = '已清除模型';
+  statusText.value = "已清除模型";
 }
 
 const codeMap: Record<string, () => string> = {
@@ -174,7 +179,7 @@ const model = await Cesium.Model.fromGltfAsync({
 })
 viewer.scene.primitives.add(model)`,
 
-  'entity-model': () => `// ② Entity.model：声明式加载（推荐日常使用）
+  "entity-model": () => `// ② Entity.model：声明式加载（推荐日常使用）
 viewer.entities.add({
   position: Cesium.Cartesian3.fromDegrees(lon, lat, 0),
   orientation: Cesium.Transforms.headingPitchRollQuaternion(
@@ -227,7 +232,7 @@ const explainMap: Record<string, () => string> = {
 【要点】glb 为二进制单文件，加载最快；
 模型本地资源或 CDN 均可，注意 CORS。`,
 
-  'entity-model': () => `【原理】Entity.model 是 Model 的声明式包装：
+  "entity-model": () => `【原理】Entity.model 是 Model 的声明式包装：
 自动处理位置/朝向（orientation）、拾取、信息框，并随数据源管理生命周期。
 
 【区别】
@@ -257,18 +262,52 @@ Transforms.eastNorthUpToFixedFrame 把经纬度坐标转成
 Primitive 场景用 modelMatrix 组合任意变换。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'load' ? 'primary' : 'default'" @click="applyLoad">加载模型</n-button>
-      <n-button size="small" :type="activeFeature === 'entity-model' ? 'primary' : 'default'" @click="applyEntityModel">Entity 方式</n-button>
-      <n-button size="small" :type="activeFeature === 'animation' ? 'primary' : 'default'" @click="applyAnimate">{{ animating ? '暂停动画' : '播放动画' }}</n-button>
-      <n-button size="small" :type="activeFeature === 'animation' ? 'primary' : 'default'" @click="applySpeed">速度 {{ animationSpeed }}x</n-button>
-      <n-button size="small" :type="activeFeature === 'scale' ? 'primary' : 'default'" @click="applyScale">缩放</n-button>
-      <n-button size="small" :type="activeFeature === 'node' ? 'primary' : 'default'" @click="applyRotate">旋转朝向</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'load' ? 'primary' : 'default'"
+        @click="applyLoad"
+        >加载模型</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'entity-model' ? 'primary' : 'default'"
+        @click="applyEntityModel"
+        >Entity 方式</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'animation' ? 'primary' : 'default'"
+        @click="applyAnimate"
+        >{{ animating ? "暂停动画" : "播放动画" }}</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'animation' ? 'primary' : 'default'"
+        @click="applySpeed"
+        >速度 {{ animationSpeed }}x</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'scale' ? 'primary' : 'default'"
+        @click="applyScale"
+        >缩放</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'node' ? 'primary' : 'default'"
+        @click="applyRotate"
+        >旋转朝向</n-button
+      >
       <n-button size="small" quaternary @click="applyClear">清除</n-button>
     </div>
 
@@ -281,7 +320,11 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       @split-change="onSplitChange"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </template>
     </SplitViewer>
   </div>

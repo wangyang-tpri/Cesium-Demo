@@ -1,9 +1,10 @@
 import * as Cesium from 'cesium';
 import { onBeforeUnmount, onMounted, shallowRef, watch, type Ref } from 'vue';
+import { createTiandituVecLayers, createTiandituImgLayers } from '@/utils/tianditu';
 
 export interface UseCesiumViewerOptions {
-  /** 影像底图：'esri'(默认) | 'osm' | 'none'（无底图） | 自定义 ImageryLayer */
-  baseLayer?: 'esri' | 'osm' | 'none' | Cesium.ImageryLayer;
+  /** 影像底图：'tianditu-vec'(默认, 天地图街道) | 'tianditu-img'(天地图影像) | 'esri' | 'osm' | 'none'（无底图） | 自定义 ImageryLayer */
+  baseLayer?: 'tianditu-vec' | 'tianditu-img' | 'esri' | 'osm' | 'none' | Cesium.ImageryLayer;
   /** 是否使用 Cesium World Terrain 全球地形（需 Ion token，默认 false 使用椭球面） */
   terrain?: boolean;
   /** 初始相机：经纬度(度) + 高度(米)，以及朝向 heading/pitch/roll(度) */
@@ -55,7 +56,7 @@ const DEFAULT_CAMERA = {
  *
  * 用法：
  * const { viewer } = useCesiumViewer(containerRef, {
- *   baseLayer: 'esri',
+ *   baseLayer: 'tianditu-img',
  *   terrain: true,
  *   camera: { position: [108.9, 34.2, 2000], pitch: -45 },
  *   onTick: (v, time) => { ... },
@@ -75,11 +76,19 @@ export function useCesiumViewer(
   const ui = options.ui ?? {};
   const camera = { ...DEFAULT_CAMERA, ...options.camera };
 
-  function buildBaseLayer(): Cesium.ImageryLayer | false {
-    const baseLayer = options.baseLayer ?? 'esri';
-    if (baseLayer === 'none') return false;
-    if (baseLayer instanceof Cesium.ImageryLayer) return baseLayer;
+  function buildBaseLayers(): Cesium.ImageryLayer[] {
+    const baseLayer = options.baseLayer ?? 'tianditu-vec';
+    if (baseLayer === 'none') return [];
+    if (baseLayer instanceof Cesium.ImageryLayer) return [baseLayer];
 
+    if (baseLayer === 'tianditu-vec') {
+      // 天地图矢量街道（底图 + 注记两层）
+      return createTiandituVecLayers();
+    }
+    if (baseLayer === 'tianditu-img') {
+      // 天地图影像（底图 + 注记两层）
+      return createTiandituImgLayers();
+    }
     if (baseLayer === 'osm') {
       // OpenStreetMap 标准瓦片：{z}/{x}/{y}
       const provider = new Cesium.UrlTemplateImageryProvider({
@@ -87,15 +96,15 @@ export function useCesiumViewer(
         credit: '© OpenStreetMap contributors',
         maximumLevel: 19,
       });
-      return new Cesium.ImageryLayer(provider);
+      return [new Cesium.ImageryLayer(provider)];
     }
-    // 默认：Esri World Imagery 全球影像（无需 token，{z}/{y}/{x} 注意顺序）
+    // Esri World Imagery 全球影像（无需 token，{z}/{y}/{x} 注意顺序）
     const provider = new Cesium.UrlTemplateImageryProvider({
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       credit: 'Imagery © Esri, Maxar, Earthstar Geographics',
       maximumLevel: 19,
     });
-    return new Cesium.ImageryLayer(provider);
+    return [new Cesium.ImageryLayer(provider)];
   }
 
   function init() {
@@ -106,7 +115,7 @@ export function useCesiumViewer(
     if (disposed) return;
 
     const v = new Cesium.Viewer(container, {
-      baseLayer: buildBaseLayer(),
+      baseLayer: false, // 手动添加底图（支持天地图等多层底图）
       baseLayerPicker: ui.baseLayerPicker ?? false,
       geocoder: ui.geocoder ?? false,
       homeButton: ui.homeButton ?? true,
@@ -123,6 +132,12 @@ export function useCesiumViewer(
         : {}),
     });
     viewer.value = v;
+
+    // 手动添加底图（支持多层，如天地图底图+注记）
+    const baseLayers = buildBaseLayers();
+    for (const layer of baseLayers) {
+      v.imageryLayers.add(layer);
+    }
 
     // 初始相机视角
     v.camera.setView({

@@ -17,7 +17,7 @@ function onSplitChange() {
 
 // 本页开启全部 UI 控件，便于演示控件的显示/隐藏
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: "esri",
+  baseLayer: "tianditu-vec",
   camera: { position: [108.9, 34.2, 2200000], pitch: -55 },
   ui: {
     animation: true,

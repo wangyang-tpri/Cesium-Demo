@@ -1,17 +1,17 @@
-<script setup lang="ts">
-import * as Cesium from 'cesium';
-import { onMounted, ref, provide } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import SplitViewer from '@/components/base/SplitViewer.vue';
+﻿<script setup lang="ts">
+import * as Cesium from "cesium";
+import { onMounted, ref, provide } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
-const activeFeature = ref('click');
-const statusText = ref('事件系统：左键点击实体 / 移动鼠标 / 双击地球体验。');
+const activeFeature = ref("click");
+const statusText = ref("事件系统：左键点击实体 / 移动鼠标 / 双击地球体验。");
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "tianditu-img",
   camera: { position: [108.94, 34.34, 5000], pitch: -55 },
 });
 
@@ -27,10 +27,10 @@ let pickedFlag = false;
 
 // 预置可拾取的实体
 const PICKABLES = [
-  { name: '钟楼', lon: 108.94, lat: 34.342, h: 40, color: '#e74c3c' },
-  { name: '鼓楼', lon: 108.935, lat: 34.343, h: 35, color: '#f39c12' },
-  { name: '大雁塔', lon: 108.97, lat: 34.218, h: 65, color: '#9b59b6' },
-  { name: '南门城楼', lon: 108.947, lat: 34.338, h: 30, color: '#27ae60' },
+  { name: "钟楼", lon: 108.94, lat: 34.342, h: 40, color: "#e74c3c" },
+  { name: "鼓楼", lon: 108.935, lat: 34.343, h: 35, color: "#f39c12" },
+  { name: "大雁塔", lon: 108.97, lat: 34.218, h: 65, color: "#9b59b6" },
+  { name: "南门城楼", lon: 108.947, lat: 34.338, h: 30, color: "#27ae60" },
 ];
 
 onMounted(() => {
@@ -49,7 +49,7 @@ onMounted(() => {
       },
       label: {
         text: p.name,
-        font: '14px Microsoft YaHei, sans-serif',
+        font: "14px Microsoft YaHei, sans-serif",
         pixelOffset: new Cesium.Cartesian2(0, -30),
         fillColor: Cesium.Color.WHITE,
         outlineColor: Cesium.Color.BLACK,
@@ -63,52 +63,74 @@ onMounted(() => {
   handler = new Cesium.ScreenSpaceEventHandler(v.scene.canvas);
 
   // ① 左键拾取实体
-  handler.setInputAction((e: Cesium.ScreenSpaceEventHandler.PositionedEvent) => {
-    activeFeature.value = 'click';
-    const picked = v.scene.pick(e.position);
-    if (Cesium.defined(picked) && picked.id instanceof Cesium.Entity) {
-      const entity = picked.id as Cesium.Entity;
-      highlight(entity);
-      const pos = (entity.position as Cesium.ConstantPositionProperty).getValue(Cesium.JulianDate.now());
-      const carto = pos ? Cesium.Cartographic.fromCartesian(pos) : null;
-      const coord = carto
-        ? `经度 ${Cesium.Math.toDegrees(carto.longitude).toFixed(5)}°，纬度 ${Cesium.Math.toDegrees(carto.latitude).toFixed(5)}°`
-        : '';
-      statusText.value = `拾取到实体【${String(entity.id)}】：${coord}`;
-    } else {
-      clearHighlight();
-      statusText.value = '点击处无实体（可用“深度拾取”功能获取地形坐标）';
-    }
-  }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+  handler.setInputAction(
+    (e: Cesium.ScreenSpaceEventHandler.PositionedEvent) => {
+      activeFeature.value = "click";
+      const picked = v.scene.pick(e.position);
+      if (Cesium.defined(picked) && picked.id instanceof Cesium.Entity) {
+        const entity = picked.id as Cesium.Entity;
+        highlight(entity);
+        const pos = (
+          entity.position as Cesium.ConstantPositionProperty
+        ).getValue(Cesium.JulianDate.now());
+        const carto = pos ? Cesium.Cartographic.fromCartesian(pos) : null;
+        const coord = carto
+          ? `经度 ${Cesium.Math.toDegrees(carto.longitude).toFixed(
+              5
+            )}°，纬度 ${Cesium.Math.toDegrees(carto.latitude).toFixed(5)}°`
+          : "";
+        statusText.value = `拾取到实体【${String(entity.id)}】：${coord}`;
+      } else {
+        clearHighlight();
+        statusText.value = "点击处无实体（可用“深度拾取”功能获取地形坐标）";
+      }
+    },
+    Cesium.ScreenSpaceEventType.LEFT_CLICK
+  );
 
   // ② 鼠标移动 → 屏幕坐标 + 地理坐标
   handler.setInputAction((e: Cesium.ScreenSpaceEventHandler.MotionEvent) => {
-    if (activeFeature.value !== 'move') return;
-    const cartesian = v.camera.pickEllipsoid(e.endPosition, v.scene.globe.ellipsoid);
+    if (activeFeature.value !== "move") return;
+    const cartesian = v.camera.pickEllipsoid(
+      e.endPosition,
+      v.scene.globe.ellipsoid
+    );
     if (cartesian) {
       const carto = Cesium.Cartographic.fromCartesian(cartesian);
       statusText.value =
-        `屏幕 (${e.endPosition.x.toFixed(0)}, ${e.endPosition.y.toFixed(0)}) → ` +
+        `屏幕 (${e.endPosition.x.toFixed(0)}, ${e.endPosition.y.toFixed(
+          0
+        )}) → ` +
         `经度 ${Cesium.Math.toDegrees(carto.longitude).toFixed(4)}°，` +
         `纬度 ${Cesium.Math.toDegrees(carto.latitude).toFixed(4)}°`;
     }
   }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
   // ④ 双击 → 飞行到该点
-  handler.setInputAction((e: Cesium.ScreenSpaceEventHandler.PositionedEvent) => {
-    activeFeature.value = 'dblclick';
-    const cartesian = v.camera.pickEllipsoid(e.position, v.scene.globe.ellipsoid);
-    if (!cartesian) return;
-    v.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(
-        Cesium.Math.toDegrees(Cesium.Cartographic.fromCartesian(cartesian).longitude),
-        Cesium.Math.toDegrees(Cesium.Cartographic.fromCartesian(cartesian).latitude),
-        2000
-      ),
-      duration: 1.2,
-    });
-    statusText.value = '双击：飞行至点击点（高度 2000m）';
-  }, Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+  handler.setInputAction(
+    (e: Cesium.ScreenSpaceEventHandler.PositionedEvent) => {
+      activeFeature.value = "dblclick";
+      const cartesian = v.camera.pickEllipsoid(
+        e.position,
+        v.scene.globe.ellipsoid
+      );
+      if (!cartesian) return;
+      v.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(
+          Cesium.Math.toDegrees(
+            Cesium.Cartographic.fromCartesian(cartesian).longitude
+          ),
+          Cesium.Math.toDegrees(
+            Cesium.Cartographic.fromCartesian(cartesian).latitude
+          ),
+          2000
+        ),
+        duration: 1.2,
+      });
+      statusText.value = "双击：飞行至点击点（高度 2000m）";
+    },
+    Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK
+  );
 });
 
 function highlight(entity: Cesium.Entity) {
@@ -116,22 +138,33 @@ function highlight(entity: Cesium.Entity) {
   selected = entity;
   const box = entity.box;
   if (box && box.material instanceof Cesium.ColorMaterialProperty) {
-    box.material = new Cesium.ColorMaterialProperty(Cesium.Color.YELLOW.withAlpha(0.95));
+    box.material = new Cesium.ColorMaterialProperty(
+      Cesium.Color.YELLOW.withAlpha(0.95)
+    );
   }
   // 选中框线提示：在实体周围添加白色描边 box
-  const pos = (entity.position as Cesium.ConstantPositionProperty).getValue(Cesium.JulianDate.now());
+  const pos = (entity.position as Cesium.ConstantPositionProperty).getValue(
+    Cesium.JulianDate.now()
+  );
   if (pos) {
-    const dim = entity.box?.dimensions?.getValue(Cesium.JulianDate.now()) ?? new Cesium.Cartesian3(50, 50, 40);
-    marker = viewer.value?.entities.add({
-      position: pos,
-      box: {
-        dimensions: Cesium.Cartesian3.add(dim, new Cesium.Cartesian3(8, 8, 8), new Cesium.Cartesian3()),
-        material: Cesium.Color.TRANSPARENT,
-        outline: true,
-        outlineColor: Cesium.Color.YELLOW,
-        outlineWidth: 2,
-      },
-    }) ?? null;
+    const dim =
+      entity.box?.dimensions?.getValue(Cesium.JulianDate.now()) ??
+      new Cesium.Cartesian3(50, 50, 40);
+    marker =
+      viewer.value?.entities.add({
+        position: pos,
+        box: {
+          dimensions: Cesium.Cartesian3.add(
+            dim,
+            new Cesium.Cartesian3(8, 8, 8),
+            new Cesium.Cartesian3()
+          ),
+          material: Cesium.Color.TRANSPARENT,
+          outline: true,
+          outlineColor: Cesium.Color.YELLOW,
+          outlineWidth: 2,
+        },
+      }) ?? null;
   }
 }
 
@@ -139,7 +172,10 @@ function clearHighlight() {
   if (selected) {
     const id = String(selected.id);
     const found = PICKABLES.find((p) => p.name === id);
-    if (found && selected.box?.material instanceof Cesium.ColorMaterialProperty) {
+    if (
+      found &&
+      selected.box?.material instanceof Cesium.ColorMaterialProperty
+    ) {
       selected.box.material = new Cesium.ColorMaterialProperty(
         Cesium.Color.fromCssColorString(found.color).withAlpha(0.85)
       );
@@ -153,27 +189,27 @@ function clearHighlight() {
 }
 
 function applyMove() {
-  activeFeature.value = 'move';
-  statusText.value = '移动鼠标：实时显示屏幕坐标与地理坐标';
+  activeFeature.value = "move";
+  statusText.value = "移动鼠标：实时显示屏幕坐标与地理坐标";
 }
 
 function applyPickPosition() {
-  activeFeature.value = 'pick-position';
+  activeFeature.value = "pick-position";
   pickedFlag = !pickedFlag;
   statusText.value = pickedFlag
-    ? '深度拾取已开启：点击任意位置，显示模型/地形表面世界坐标'
-    : '深度拾取已关闭（左键仍可拾取实体）';
+    ? "深度拾取已开启：点击任意位置，显示模型/地形表面世界坐标"
+    : "深度拾取已关闭（左键仍可拾取实体）";
 }
 
 function applyDblClick() {
-  activeFeature.value = 'dblclick';
-  statusText.value = '双击已开启：双击地球任意位置飞行过去';
+  activeFeature.value = "dblclick";
+  statusText.value = "双击已开启：双击地球任意位置飞行过去";
 }
 
 function applyClear() {
-  activeFeature.value = 'click';
+  activeFeature.value = "click";
   clearHighlight();
-  statusText.value = '已清除选中状态';
+  statusText.value = "已清除选中状态";
 }
 
 const codeMap: Record<string, () => string> = {
@@ -196,7 +232,7 @@ handler.setInputAction((e) => {
   // 屏幕(e.endPosition) → 经纬度
 }, Cesium.ScreenSpaceEventType.MOUSE_MOVE)`,
 
-  'pick-position': () => `// ③ 深度拾取：模型/地形表面的世界坐标
+  "pick-position": () => `// ③ 深度拾取：模型/地形表面的世界坐标
 handler.setInputAction((e) => {
   // 读深度缓冲区，得到命中点的真实世界坐标
   const cartesian = viewer.scene.pickPosition(e.position)
@@ -241,7 +277,7 @@ scene.pick(position) 返回该像素命中的对象：
 
 【性能】回调里避免做重活；只读操作无压力。`,
 
-  'pick-position': () => `【原理】scene.pickPosition 读取深度缓冲区的深度值，
+  "pick-position": () => `【原理】scene.pickPosition 读取深度缓冲区的深度值，
 还原出该像素在模型/地形表面的真实世界坐标（有高程）。
 对比：
 • pickEllipsoid → 椭球面交点（忽略地形与模型）
@@ -260,16 +296,40 @@ removeInputAction(type) 按事件类型移除。
 【要点】页面销毁时务必清理事件，避免内存泄漏（本页 onBeforeUnmount 已处理）。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'click' ? 'primary' : 'default'" @click="activeFeature = 'click'">拾取实体（点击试试）</n-button>
-      <n-button size="small" :type="activeFeature === 'move' ? 'primary' : 'default'" @click="applyMove">鼠标移动取坐标</n-button>
-      <n-button size="small" :type="activeFeature === 'pick-position' ? 'primary' : 'default'" @click="applyPickPosition">深度拾取：{{ pickedFlag ? '开' : '关' }}</n-button>
-      <n-button size="small" :type="activeFeature === 'dblclick' ? 'primary' : 'default'" @click="applyDblClick">双击飞行（双击试试）</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'click' ? 'primary' : 'default'"
+        @click="activeFeature = 'click'"
+        >拾取实体（点击试试）</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'move' ? 'primary' : 'default'"
+        @click="applyMove"
+        >鼠标移动取坐标</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'pick-position' ? 'primary' : 'default'"
+        @click="applyPickPosition"
+        >深度拾取：{{ pickedFlag ? "开" : "关" }}</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'dblclick' ? 'primary' : 'default'"
+        @click="applyDblClick"
+        >双击飞行（双击试试）</n-button
+      >
       <n-button size="small" quaternary @click="applyClear">清除选中</n-button>
     </div>
 
@@ -282,7 +342,11 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       @split-change="onSplitChange"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 max-w-[70%] rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 max-w-[70%] rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </template>
     </SplitViewer>
   </div>

@@ -1,17 +1,19 @@
-<script setup lang="ts">
-import * as Cesium from 'cesium';
-import { ref, provide } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import SplitViewer from '@/components/base/SplitViewer.vue';
+﻿<script setup lang="ts">
+import * as Cesium from "cesium";
+import { ref, provide } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
-const activeFeature = ref('color');
-const statusText = ref('CustomShader：为 glTF 模型注入自定义 GLSL，实时控制渲染。');
+const activeFeature = ref("color");
+const statusText = ref(
+  "CustomShader：为 glTF 模型注入自定义 GLSL，实时控制渲染。"
+);
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "tianditu-img",
   camera: { position: [108.94, 34.34, 1200], pitch: -35 },
 });
 
@@ -21,7 +23,7 @@ function onSplitChange() {
 }
 
 const MODEL_URL =
-  'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/CesiumMan/glTF-Binary/CesiumMan.glb';
+  "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/CesiumMan/glTF-Binary/CesiumMan.glb";
 
 const BASE_POS = Cesium.Cartesian3.fromDegrees(108.94, 34.34, 0);
 const BASE_MATRIX = Cesium.Transforms.eastNorthUpToFixedFrame(BASE_POS);
@@ -33,14 +35,17 @@ async function ensureModel(): Promise<boolean> {
   const v = viewer.value;
   if (!v) return false;
   if (model) return true;
-  statusText.value = '正在加载模型…';
+  statusText.value = "正在加载模型…";
   try {
-    model = await Cesium.Model.fromGltfAsync({ url: MODEL_URL, modelMatrix: BASE_MATRIX });
+    model = await Cesium.Model.fromGltfAsync({
+      url: MODEL_URL,
+      modelMatrix: BASE_MATRIX,
+    });
     v.scene.primitives.add(model);
     return true;
   } catch (e) {
     console.error(e);
-    statusText.value = '模型加载失败：请检查网络';
+    statusText.value = "模型加载失败：请检查网络";
     return false;
   }
 }
@@ -54,10 +59,13 @@ function applyShader(name: string, s: Cesium.CustomShader) {
 async function applyColor() {
   if (!(await ensureModel())) return;
   applyShader(
-    'color',
+    "color",
     new Cesium.CustomShader({
       uniforms: {
-        u_color: { type: Cesium.UniformType.VEC3, value: new Cesium.Cartesian3(1.0, 0.35, 0.2) },
+        u_color: {
+          type: Cesium.UniformType.VEC3,
+          value: new Cesium.Cartesian3(1.0, 0.35, 0.2),
+        },
       },
       fragmentShaderText: `
         void fragmentMain(FragmentInput fsInput,
@@ -68,13 +76,13 @@ async function applyColor() {
       `,
     })
   );
-  statusText.value = '整体变色：uniform u_color 覆盖材质漫反射';
+  statusText.value = "整体变色：uniform u_color 覆盖材质漫反射";
 }
 
 async function applyGradient() {
   if (!(await ensureModel())) return;
   applyShader(
-    'gradient',
+    "gradient",
     new Cesium.CustomShader({
       fragmentShaderText: `
         void fragmentMain(FragmentInput fsInput,
@@ -88,13 +96,13 @@ async function applyGradient() {
       `,
     })
   );
-  statusText.value = '高度渐变：v_positionMC.y 从蓝到橙渐变';
+  statusText.value = "高度渐变：v_positionMC.y 从蓝到橙渐变";
 }
 
 async function applyWave() {
   if (!(await ensureModel())) return;
   applyShader(
-    'wave',
+    "wave",
     new Cesium.CustomShader({
       vertexShaderText: `
         void vertexMain(VertexInput vsInput,
@@ -108,13 +116,13 @@ async function applyWave() {
       `,
     })
   );
-  statusText.value = '顶点波动：sin 波扰动顶点位置（vertexMain）';
+  statusText.value = "顶点波动：sin 波扰动顶点位置（vertexMain）";
 }
 
 async function applyClip() {
   if (!(await ensureModel())) return;
   applyShader(
-    'clip',
+    "clip",
     new Cesium.CustomShader({
       fragmentShaderText: `
         void fragmentMain(FragmentInput fsInput,
@@ -128,11 +136,11 @@ async function applyClip() {
       `,
     })
   );
-  statusText.value = '剖面裁剪：Y>0.3 片段 discard（局部坐标）';
+  statusText.value = "剖面裁剪：Y>0.3 片段 discard（局部坐标）";
 }
 
 function applyReset() {
-  activeFeature.value = 'color';
+  activeFeature.value = "color";
   // 1.145：customShader 为必填属性，不能赋 undefined；
   // 恢复默认材质改为直接销毁重建模型（着色器随之清除）
   if (model) {
@@ -141,7 +149,7 @@ function applyReset() {
     model = null;
   }
   shader = null;
-  statusText.value = '已恢复默认材质（重建模型，无自定义着色器）';
+  statusText.value = "已恢复默认材质（重建模型，无自定义着色器）";
 }
 
 const codeMap: Record<string, () => string> = {
@@ -229,16 +237,40 @@ const explainMap: Record<string, () => string> = {
 【要点】discard 不产生深度，镂空处可看到背后内容。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'color' ? 'primary' : 'default'" @click="applyColor">整体变色</n-button>
-      <n-button size="small" :type="activeFeature === 'gradient' ? 'primary' : 'default'" @click="applyGradient">高度渐变</n-button>
-      <n-button size="small" :type="activeFeature === 'wave' ? 'primary' : 'default'" @click="applyWave">顶点波动</n-button>
-      <n-button size="small" :type="activeFeature === 'clip' ? 'primary' : 'default'" @click="applyClip">剖面裁剪</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'color' ? 'primary' : 'default'"
+        @click="applyColor"
+        >整体变色</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'gradient' ? 'primary' : 'default'"
+        @click="applyGradient"
+        >高度渐变</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'wave' ? 'primary' : 'default'"
+        @click="applyWave"
+        >顶点波动</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'clip' ? 'primary' : 'default'"
+        @click="applyClip"
+        >剖面裁剪</n-button
+      >
       <n-button size="small" quaternary @click="applyReset">恢复默认</n-button>
     </div>
 
@@ -251,7 +283,11 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       @split-change="onSplitChange"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </template>
     </SplitViewer>
   </div>

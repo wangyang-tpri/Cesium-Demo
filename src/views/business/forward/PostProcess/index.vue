@@ -1,17 +1,17 @@
-<script setup lang="ts">
-import * as Cesium from 'cesium';
-import { onMounted, ref, provide } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import SplitViewer from '@/components/base/SplitViewer.vue';
+﻿<script setup lang="ts">
+import * as Cesium from "cesium";
+import { onMounted, ref, provide } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
-const activeFeature = ref('blur');
-const statusText = ref('后期处理：对整帧画面做像素级滤镜（全屏后处理）。');
+const activeFeature = ref("blur");
+const statusText = ref("后期处理：对整帧画面做像素级滤镜（全屏后处理）。");
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "tianditu-img",
   camera: { position: [108.94, 34.34, 2500], pitch: -45 },
 });
 
@@ -21,7 +21,8 @@ function onSplitChange() {
 }
 
 // 1.145：边缘检测/轮廓描边返回 PostProcessStageComposite（复合阶段）
-const stages: (Cesium.PostProcessStage | Cesium.PostProcessStageComposite)[] = [];
+const stages: (Cesium.PostProcessStage | Cesium.PostProcessStageComposite)[] =
+  [];
 
 function removeAll() {
   const v = viewer.value;
@@ -48,18 +49,18 @@ onMounted(() => {
 });
 
 function applyBlur() {
-  activeFeature.value = 'blur';
+  activeFeature.value = "blur";
   removeAll();
   const v = viewer.value;
   if (!v) return;
   const stage = Cesium.PostProcessStageLibrary.createBlurStage();
   v.scene.postProcessStages.add(stage);
   stages.push(stage);
-  statusText.value = '高斯模糊（createBlurStage）：画面整体柔化';
+  statusText.value = "高斯模糊（createBlurStage）：画面整体柔化";
 }
 
 function applyEdge() {
-  activeFeature.value = 'edge';
+  activeFeature.value = "edge";
   removeAll();
   const v = viewer.value;
   if (!v) return;
@@ -70,33 +71,33 @@ function applyEdge() {
   v.scene.postProcessStages.add(edge);
   v.scene.postProcessStages.add(silhouette);
   stages.push(edge, silhouette);
-  statusText.value = '边缘检测 + 轮廓描边（两阶段串联）';
+  statusText.value = "边缘检测 + 轮廓描边（两阶段串联）";
 }
 
 function applyNight() {
-  activeFeature.value = 'night';
+  activeFeature.value = "night";
   removeAll();
   const v = viewer.value;
   if (!v) return;
   const stage = Cesium.PostProcessStageLibrary.createNightVisionStage();
   v.scene.postProcessStages.add(stage);
   stages.push(stage);
-  statusText.value = '夜视（createNightVisionStage）：绿光增强';
+  statusText.value = "夜视（createNightVisionStage）：绿光增强";
 }
 
 function applyBw() {
-  activeFeature.value = 'bw';
+  activeFeature.value = "bw";
   removeAll();
   const v = viewer.value;
   if (!v) return;
   const stage = Cesium.PostProcessStageLibrary.createBlackAndWhiteStage();
   v.scene.postProcessStages.add(stage);
   stages.push(stage);
-  statusText.value = '黑白（createBlackAndWhiteStage）';
+  statusText.value = "黑白（createBlackAndWhiteStage）";
 }
 
 function applyCustom() {
-  activeFeature.value = 'custom';
+  activeFeature.value = "custom";
   removeAll();
   const v = viewer.value;
   if (!v) return;
@@ -119,13 +120,13 @@ function applyCustom() {
   });
   v.scene.postProcessStages.add(stage);
   stages.push(stage);
-  statusText.value = '自定义着色器：像素化 + 灰度';
+  statusText.value = "自定义着色器：像素化 + 灰度";
 }
 
 function applyClear() {
-  activeFeature.value = 'blur';
+  activeFeature.value = "blur";
   removeAll();
-  statusText.value = '已清除后期处理';
+  statusText.value = "已清除后期处理";
 }
 
 const codeMap: Record<string, () => string> = {
@@ -213,17 +214,46 @@ createBrightnessStage / createLensFlareStage / createDepthOfFieldStage…`,
 需手动声明 in/uniform 变量，但 out_FragColor 不用声明；多阶段按添加顺序执行。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'blur' ? 'primary' : 'default'" @click="applyBlur">高斯模糊</n-button>
-      <n-button size="small" :type="activeFeature === 'edge' ? 'primary' : 'default'" @click="applyEdge">轮廓描边</n-button>
-      <n-button size="small" :type="activeFeature === 'night' ? 'primary' : 'default'" @click="applyNight">夜视</n-button>
-      <n-button size="small" :type="activeFeature === 'bw' ? 'primary' : 'default'" @click="applyBw">黑白</n-button>
-      <n-button size="small" :type="activeFeature === 'custom' ? 'primary' : 'default'" @click="applyCustom">自定义像素化</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'blur' ? 'primary' : 'default'"
+        @click="applyBlur"
+        >高斯模糊</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'edge' ? 'primary' : 'default'"
+        @click="applyEdge"
+        >轮廓描边</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'night' ? 'primary' : 'default'"
+        @click="applyNight"
+        >夜视</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'bw' ? 'primary' : 'default'"
+        @click="applyBw"
+        >黑白</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'custom' ? 'primary' : 'default'"
+        @click="applyCustom"
+        >自定义像素化</n-button
+      >
       <n-button size="small" quaternary @click="applyClear">清除</n-button>
     </div>
 
@@ -236,7 +266,11 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       @split-change="onSplitChange"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </template>
     </SplitViewer>
   </div>

@@ -1,17 +1,19 @@
-<script setup lang="ts">
-import * as Cesium from 'cesium';
-import { onMounted, ref, provide } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import SplitViewer from '@/components/base/SplitViewer.vue';
+﻿<script setup lang="ts">
+import * as Cesium from "cesium";
+import { onMounted, ref, provide } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
-const activeFeature = ref('distance');
-const statusText = ref('选择“测距/测面积”，然后在地球上点击布点；点“完成/清除”结束。');
+const activeFeature = ref("distance");
+const statusText = ref(
+  "选择“测距/测面积”，然后在地球上点击布点；点“完成/清除”结束。"
+);
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "tianditu-img",
   camera: { position: [108.94, 34.34, 12000], pitch: -55 },
 });
 
@@ -20,8 +22,8 @@ function onSplitChange() {
   viewer.value?.resize();
 }
 
-type Mode = 'distance' | 'area';
-const mode = ref<Mode>('distance');
+type Mode = "distance" | "area";
+const mode = ref<Mode>("distance");
 
 let handler: Cesium.ScreenSpaceEventHandler | null = null;
 let points: Cesium.Cartesian3[] = [];
@@ -47,7 +49,10 @@ function setMode(m: Mode) {
   mode.value = m;
   activeFeature.value = m;
   resetMeasurements();
-  statusText.value = m === 'distance' ? '测距模式：点击地球添加点，实时显示累计距离' : '测面积模式：点击添加多边形顶点，点“完成”计算面积';
+  statusText.value =
+    m === "distance"
+      ? "测距模式：点击地球添加点，实时显示累计距离"
+      : "测面积模式：点击添加多边形顶点，点“完成”计算面积";
 }
 
 /** 计算折线总长（米） */
@@ -96,7 +101,7 @@ function redraw() {
       },
       label: {
         text: String(i + 1),
-        font: '11px monospace',
+        font: "11px monospace",
         fillColor: Cesium.Color.YELLOW,
         outlineColor: Cesium.Color.BLACK,
         outlineWidth: 3,
@@ -107,21 +112,21 @@ function redraw() {
     });
   });
 
-  if (mode.value === 'distance' && points.length > 1) {
+  if (mode.value === "distance" && points.length > 1) {
     lineEntity = v.entities.add({
       polyline: {
         positions: points,
         width: 3,
-        material: Cesium.Color.fromCssColorString('#00d2ff'),
+        material: Cesium.Color.fromCssColorString("#00d2ff"),
         clampToGround: false,
       },
     });
-  } else if (mode.value === 'area' && points.length > 2) {
+  } else if (mode.value === "area" && points.length > 2) {
     lineEntity = v.entities.add({
       polyline: {
         positions: [...points, points[0]!], // 闭合
         width: 3,
-        material: Cesium.Color.fromCssColorString('#ff9f43'),
+        material: Cesium.Color.fromCssColorString("#ff9f43"),
       },
     });
   }
@@ -131,19 +136,29 @@ onMounted(() => {
   const v = viewer.value;
   if (!v) return;
   handler = new Cesium.ScreenSpaceEventHandler(v.scene.canvas);
-  handler.setInputAction((e: Cesium.ScreenSpaceEventHandler.PositionedEvent) => {
-    const cartesian = v.camera.pickEllipsoid(e.position, v.scene.globe.ellipsoid);
-    if (!cartesian) return;
-    points.push(cartesian);
-    redraw();
-    if (mode.value === 'distance') {
-      const km = totalDistance() / METERS_PER_KM;
-      statusText.value = `已布 ${points.length} 点，累计距离 ${km.toFixed(2)} km`;
-    } else {
-      const area = polygonArea();
-      statusText.value = `已布 ${points.length} 个顶点${points.length >= 3 ? `，当前面积 ${formatArea(area)}` : ''}`;
-    }
-  }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+  handler.setInputAction(
+    (e: Cesium.ScreenSpaceEventHandler.PositionedEvent) => {
+      const cartesian = v.camera.pickEllipsoid(
+        e.position,
+        v.scene.globe.ellipsoid
+      );
+      if (!cartesian) return;
+      points.push(cartesian);
+      redraw();
+      if (mode.value === "distance") {
+        const km = totalDistance() / METERS_PER_KM;
+        statusText.value = `已布 ${points.length} 点，累计距离 ${km.toFixed(
+          2
+        )} km`;
+      } else {
+        const area = polygonArea();
+        statusText.value = `已布 ${points.length} 个顶点${
+          points.length >= 3 ? `，当前面积 ${formatArea(area)}` : ""
+        }`;
+      }
+    },
+    Cesium.ScreenSpaceEventType.LEFT_CLICK
+  );
 });
 
 function formatArea(m2: number): string {
@@ -154,27 +169,29 @@ function formatArea(m2: number): string {
 function applyFinish() {
   const v = viewer.value;
   if (!v) return;
-  if (mode.value === 'area' && points.length >= 3) {
+  if (mode.value === "area" && points.length >= 3) {
     const area = polygonArea();
     polygonEntity = v.entities.add({
       polygon: {
         hierarchy: points,
-        material: Cesium.Color.fromCssColorString('#e67e22').withAlpha(0.4),
+        material: Cesium.Color.fromCssColorString("#e67e22").withAlpha(0.4),
         outline: true,
-        outlineColor: Cesium.Color.fromCssColorString('#e67e22'),
+        outlineColor: Cesium.Color.fromCssColorString("#e67e22"),
         height: 0,
       },
     });
-    statusText.value = `测面积完成：${formatArea(area)}（切平面投影 + 鞋带公式）`;
+    statusText.value = `测面积完成：${formatArea(
+      area
+    )}（切平面投影 + 鞋带公式）`;
   } else {
-    statusText.value = '面积测量需要至少 3 个顶点';
+    statusText.value = "面积测量需要至少 3 个顶点";
   }
 }
 
 function applyClear() {
   activeFeature.value = mode.value;
   resetMeasurements();
-  statusText.value = '已清除全部测量';
+  statusText.value = "已清除全部测量";
 }
 
 const codeMap: Record<string, () => string> = {
@@ -227,15 +244,34 @@ camera.pickPosition + 沿地形线采样。`,
 大范围测量应改用球面三角或投影坐标系（如 Web Mercator）。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'distance' ? 'primary' : 'default'" @click="setMode('distance')">测距</n-button>
-      <n-button size="small" :type="activeFeature === 'area' ? 'primary' : 'default'" @click="setMode('area')">测面积</n-button>
-      <n-button size="small" :type="activeFeature === 'area' ? 'primary' : 'default'" @click="applyFinish">完成（面积）</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'distance' ? 'primary' : 'default'"
+        @click="setMode('distance')"
+        >测距</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'area' ? 'primary' : 'default'"
+        @click="setMode('area')"
+        >测面积</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'area' ? 'primary' : 'default'"
+        @click="applyFinish"
+        >完成（面积）</n-button
+      >
       <n-button size="small" quaternary @click="applyClear">清除</n-button>
     </div>
 
@@ -248,7 +284,11 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       @split-change="onSplitChange"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 max-w-[70%] rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 max-w-[70%] rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </template>
     </SplitViewer>
   </div>

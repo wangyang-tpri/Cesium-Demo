@@ -1,17 +1,17 @@
-<script setup lang="ts">
-import * as Cesium from 'cesium';
-import { ref, provide } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import SplitViewer from '@/components/base/SplitViewer.vue';
+﻿<script setup lang="ts">
+import * as Cesium from "cesium";
+import { ref, provide } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
-const activeFeature = ref('single');
-const statusText = ref('Primitive：底层图元 API，一次渲染可绘制海量几何。');
+const activeFeature = ref("single");
+const statusText = ref("Primitive：底层图元 API，一次渲染可绘制海量几何。");
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "tianditu-img",
   camera: { position: [108.94, 34.34, 25000], pitch: -60 },
 });
 
@@ -36,11 +36,11 @@ function clearAll() {
 function buildInstances(count: number) {
   const instances: Cesium.GeometryInstance[] = [];
   const colors = [
-    Cesium.Color.fromCssColorString('#ff6b6b'),
-    Cesium.Color.fromCssColorString('#feca57'),
-    Cesium.Color.fromCssColorString('#48dbfb'),
-    Cesium.Color.fromCssColorString('#1dd1a1'),
-    Cesium.Color.fromCssColorString('#a29bfe'),
+    Cesium.Color.fromCssColorString("#ff6b6b"),
+    Cesium.Color.fromCssColorString("#feca57"),
+    Cesium.Color.fromCssColorString("#48dbfb"),
+    Cesium.Color.fromCssColorString("#1dd1a1"),
+    Cesium.Color.fromCssColorString("#a29bfe"),
   ];
   const side = Math.ceil(Math.sqrt(count));
   for (let i = 0; i < count; i++) {
@@ -59,7 +59,9 @@ function buildInstances(count: number) {
         }),
         modelMatrix: Cesium.Matrix4.fromTranslation(pos),
         attributes: {
-          color: Cesium.ColorGeometryInstanceAttribute.fromColor(colors[i % colors.length]!),
+          color: Cesium.ColorGeometryInstanceAttribute.fromColor(
+            colors[i % colors.length]!
+          ),
         },
       })
     );
@@ -68,7 +70,7 @@ function buildInstances(count: number) {
 }
 
 function applySingle() {
-  activeFeature.value = 'single';
+  activeFeature.value = "single";
   clearAll();
   const v = viewer.value;
   if (!v) return;
@@ -78,11 +80,11 @@ function applySingle() {
   });
   v.scene.primitives.add(primitive);
   primitives = [primitive];
-  statusText.value = '单个 GeometryInstance：1 个彩色立方体';
+  statusText.value = "单个 GeometryInstance：1 个彩色立方体";
 }
 
 function applyBatch() {
-  activeFeature.value = 'batch';
+  activeFeature.value = "batch";
   clearAll();
   const v = viewer.value;
   if (!v) return;
@@ -97,7 +99,7 @@ function applyBatch() {
 }
 
 function applyCompare() {
-  activeFeature.value = 'compare';
+  activeFeature.value = "compare";
   clearAll();
   const v = viewer.value;
   if (!v) return;
@@ -110,10 +112,10 @@ function applyCompare() {
   ];
   // 右半区：50 个独立 Entity（各占 draw call）
   const colors = [
-    Cesium.Color.fromCssColorString('#ff6b6b'),
-    Cesium.Color.fromCssColorString('#feca57'),
-    Cesium.Color.fromCssColorString('#48dbfb'),
-    Cesium.Color.fromCssColorString('#1dd1a1'),
+    Cesium.Color.fromCssColorString("#ff6b6b"),
+    Cesium.Color.fromCssColorString("#feca57"),
+    Cesium.Color.fromCssColorString("#48dbfb"),
+    Cesium.Color.fromCssColorString("#1dd1a1"),
   ];
   const side = Math.ceil(Math.sqrt(50));
   for (let i = 0; i < 50; i++) {
@@ -130,11 +132,12 @@ function applyCompare() {
     );
   }
   v.scene.primitives.add(primitives[0]!);
-  statusText.value = '对比：左侧 50 个 Primitive 合并 1 次调用；右侧 50 个 Entity 各 1 次调用';
+  statusText.value =
+    "对比：左侧 50 个 Primitive 合并 1 次调用；右侧 50 个 Entity 各 1 次调用";
 }
 
 function applyEllipse() {
-  activeFeature.value = 'ellipse';
+  activeFeature.value = "ellipse";
   clearAll();
   const v = viewer.value;
   if (!v) return;
@@ -149,21 +152,26 @@ function applyEllipse() {
           vertexFormat: Cesium.PerInstanceColorAppearance.VERTEX_FORMAT,
         }),
         attributes: {
-          color: Cesium.ColorGeometryInstanceAttribute.fromColor(Cesium.Color.fromCssColorString('#0984e3').withAlpha(0.55)),
+          color: Cesium.ColorGeometryInstanceAttribute.fromColor(
+            Cesium.Color.fromCssColorString("#0984e3").withAlpha(0.55)
+          ),
         },
       }),
     ],
-    appearance: new Cesium.PerInstanceColorAppearance({ translucent: true, closed: false }),
+    appearance: new Cesium.PerInstanceColorAppearance({
+      translucent: true,
+      closed: false,
+    }),
   });
   v.scene.primitives.add(primitive);
   primitives = [primitive];
-  statusText.value = 'EllipseGeometry 图元：半透明椭圆面';
+  statusText.value = "EllipseGeometry 图元：半透明椭圆面";
 }
 
 function applyClear() {
-  activeFeature.value = 'single';
+  activeFeature.value = "single";
   clearAll();
-  statusText.value = '已清除全部图元';
+  statusText.value = "已清除全部图元";
 }
 
 const codeMap: Record<string, () => string> = {
@@ -271,16 +279,40 @@ Box/Cylinder/Sphere/Ellipse/Polygon/Polyline/Wall/Rectangle/
 Corridor/Plane/Ellipsoid… 都可配合 GeometryInstance 批量使用。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'single' ? 'primary' : 'default'" @click="applySingle">单个实例</n-button>
-      <n-button size="small" :type="activeFeature === 'batch' ? 'primary' : 'default'" @click="applyBatch">批量 100 实例</n-button>
-      <n-button size="small" :type="activeFeature === 'compare' ? 'primary' : 'default'" @click="applyCompare">Entity vs Primitive</n-button>
-      <n-button size="small" :type="activeFeature === 'ellipse' ? 'primary' : 'default'" @click="applyEllipse">椭圆面图元</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'single' ? 'primary' : 'default'"
+        @click="applySingle"
+        >单个实例</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'batch' ? 'primary' : 'default'"
+        @click="applyBatch"
+        >批量 100 实例</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'compare' ? 'primary' : 'default'"
+        @click="applyCompare"
+        >Entity vs Primitive</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'ellipse' ? 'primary' : 'default'"
+        @click="applyEllipse"
+        >椭圆面图元</n-button
+      >
       <n-button size="small" quaternary @click="applyClear">清除</n-button>
     </div>
 
@@ -293,7 +325,11 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       @split-change="onSplitChange"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 max-w-[70%] rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 max-w-[70%] rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </template>
     </SplitViewer>
   </div>

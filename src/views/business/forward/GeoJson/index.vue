@@ -1,24 +1,31 @@
-<script setup lang="ts">
-import * as Cesium from 'cesium';
-import { ref, provide } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import SplitViewer from '@/components/base/SplitViewer.vue';
+﻿<script setup lang="ts">
+import * as Cesium from "cesium";
+import { ref, provide } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
-const activeFeature = ref('geojson');
-const statusText = ref('GeoJSON / KML / CZML 三种空间数据格式加载。');
+const activeFeature = ref("geojson");
+const statusText = ref("GeoJSON / KML / CZML 三种空间数据格式加载。");
 
 // 时钟：覆盖 CZML 演示的 10 分钟时间窗
-const czmlStart = Cesium.JulianDate.fromIso8601('2026-01-01T00:00:00Z');
-const czmlStop = Cesium.JulianDate.fromIso8601('2026-01-01T00:10:00Z');
+const czmlStart = Cesium.JulianDate.fromIso8601("2026-01-01T00:00:00Z");
+const czmlStop = Cesium.JulianDate.fromIso8601("2026-01-01T00:10:00Z");
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "tianditu-img",
   camera: { position: [108.94, 34.34, 300000], pitch: -60 },
   ui: { animation: true, timeline: true },
-  clock: { start: czmlStart, stop: czmlStop, currentTime: czmlStart, multiplier: 60, shouldAnimate: true, range: Cesium.ClockRange.LOOP_STOP },
+  clock: {
+    start: czmlStart,
+    stop: czmlStop,
+    currentTime: czmlStart,
+    multiplier: 60,
+    shouldAnimate: true,
+    range: Cesium.ClockRange.LOOP_STOP,
+  },
 });
 
 // 分割条拖拽时通知 viewer 重新计算渲染尺寸
@@ -38,37 +45,45 @@ function removeAll() {
 /* ---------- GeoJSON（内嵌示例数据） ---------- */
 
 const SAMPLE_GEOJSON = {
-  type: 'FeatureCollection',
+  type: "FeatureCollection",
   features: [
     {
-      type: 'Feature',
-      properties: { name: '西安市区范围', level: '市级' },
+      type: "Feature",
+      properties: { name: "西安市区范围", level: "市级" },
       geometry: {
-        type: 'Polygon',
+        type: "Polygon",
         coordinates: [
           [
-            [108.6, 34.0], [109.4, 34.0], [109.4, 34.45], [108.6, 34.45], [108.6, 34.0],
+            [108.6, 34.0],
+            [109.4, 34.0],
+            [109.4, 34.45],
+            [108.6, 34.45],
+            [108.6, 34.0],
           ],
         ],
       },
     },
     {
-      type: 'Feature',
-      properties: { name: '钟楼', kind: 'POI' },
-      geometry: { type: 'Point', coordinates: [108.94, 34.342] },
+      type: "Feature",
+      properties: { name: "钟楼", kind: "POI" },
+      geometry: { type: "Point", coordinates: [108.94, 34.342] },
     },
     {
-      type: 'Feature',
-      properties: { name: '大雁塔', kind: 'POI' },
-      geometry: { type: 'Point', coordinates: [108.97, 34.218] },
+      type: "Feature",
+      properties: { name: "大雁塔", kind: "POI" },
+      geometry: { type: "Point", coordinates: [108.97, 34.218] },
     },
     {
-      type: 'Feature',
-      properties: { name: '浐灞生态区', kind: '公园' },
+      type: "Feature",
+      properties: { name: "浐灞生态区", kind: "公园" },
       geometry: {
-        type: 'MultiLineString',
+        type: "MultiLineString",
         coordinates: [
-          [[108.98, 34.33], [109.0, 34.35], [109.02, 34.37]],
+          [
+            [108.98, 34.33],
+            [109.0, 34.35],
+            [109.02, 34.37],
+          ],
         ],
       },
     },
@@ -76,18 +91,21 @@ const SAMPLE_GEOJSON = {
 } as const;
 
 async function applyGeoJson() {
-  activeFeature.value = 'geojson';
+  activeFeature.value = "geojson";
   removeAll();
   const v = viewer.value;
   if (!v) return;
-  statusText.value = '正在加载 GeoJSON…';
-  const ds = await Cesium.GeoJsonDataSource.load(JSON.stringify(SAMPLE_GEOJSON), {
-    stroke: Cesium.Color.fromCssColorString('#3498db'),
-    strokeWidth: 2.5,
-    fill: Cesium.Color.fromCssColorString('#3498db').withAlpha(0.35),
-    markerSymbol: '●',
-    clampToGround: true,
-  });
+  statusText.value = "正在加载 GeoJSON…";
+  const ds = await Cesium.GeoJsonDataSource.load(
+    JSON.stringify(SAMPLE_GEOJSON),
+    {
+      stroke: Cesium.Color.fromCssColorString("#3498db"),
+      strokeWidth: 2.5,
+      fill: Cesium.Color.fromCssColorString("#3498db").withAlpha(0.35),
+      markerSymbol: "●",
+      clampToGround: true,
+    }
+  );
   v.dataSources.add(ds);
   loaded.push(ds as unknown as Cesium.CustomDataSource);
   statusText.value = `GeoJSON 加载完成：${ds.entities.values.length} 个要素（面/点/线）`;
@@ -138,12 +156,15 @@ const SAMPLE_KML = `<?xml version="1.0" encoding="UTF-8"?>
 </kml>`;
 
 async function applyKml() {
-  activeFeature.value = 'kml';
+  activeFeature.value = "kml";
   removeAll();
   const v = viewer.value;
   if (!v) return;
-  statusText.value = '正在加载 KML…';
-  const ds = await Cesium.KmlDataSource.load(SAMPLE_KML, { camera: v.camera, canvas: v.scene.canvas });
+  statusText.value = "正在加载 KML…";
+  const ds = await Cesium.KmlDataSource.load(SAMPLE_KML, {
+    camera: v.camera,
+    canvas: v.scene.canvas,
+  });
   v.dataSources.add(ds);
   loaded.push(ds as unknown as Cesium.CustomDataSource);
   statusText.value = `KML 加载完成：${ds.entities.values.length} 个地标`;
@@ -167,70 +188,93 @@ function buildCzml(): string {
   }
   const czml = [
     {
-      id: 'document',
-      version: '1.0',
+      id: "document",
+      version: "1.0",
       clock: {
-        interval: '2026-01-01T00:00:00Z/2026-01-01T00:10:00Z',
-        currentTime: '2026-01-01T00:00:00Z',
+        interval: "2026-01-01T00:00:00Z/2026-01-01T00:10:00Z",
+        currentTime: "2026-01-01T00:00:00Z",
         multiplier: 60,
-        range: 'LOOP_STOP',
+        range: "LOOP_STOP",
       },
     },
     {
-      id: 'satellite',
-      name: '演示卫星',
-      availability: '2026-01-01T00:00:00Z/2026-01-01T00:10:00Z',
+      id: "satellite",
+      name: "演示卫星",
+      availability: "2026-01-01T00:00:00Z/2026-01-01T00:10:00Z",
       position: {
-        interpolationAlgorithm: 'LAGRANGE',
+        interpolationAlgorithm: "LAGRANGE",
         interpolationDegree: 2,
-        epoch: '2026-01-01T00:00:00Z',
+        epoch: "2026-01-01T00:00:00Z",
         cartesian: samples,
       },
-      point: { pixelSize: 12, color: { rgba: [255, 80, 80, 255] }, outlineColor: { rgba: [255, 255, 255, 255] }, outlineWidth: 2 },
-      label: { text: 'CZML 卫星', font: '13px Microsoft YaHei', fillColor: { rgba: [255, 255, 255, 255] }, outlineColor: { rgba: [0, 0, 0, 255] }, outlineWidth: 3, verticalOrigin: 'BOTTOM', pixelOffset: { cartesian2: [0, -26] } },
-      path: { material: { polylineGlow: { color: { rgba: [255, 200, 60, 200] }, glowPower: 0.35 } }, width: 4 },
+      point: {
+        pixelSize: 12,
+        color: { rgba: [255, 80, 80, 255] },
+        outlineColor: { rgba: [255, 255, 255, 255] },
+        outlineWidth: 2,
+      },
+      label: {
+        text: "CZML 卫星",
+        font: "13px Microsoft YaHei",
+        fillColor: { rgba: [255, 255, 255, 255] },
+        outlineColor: { rgba: [0, 0, 0, 255] },
+        outlineWidth: 3,
+        verticalOrigin: "BOTTOM",
+        pixelOffset: { cartesian2: [0, -26] },
+      },
+      path: {
+        material: {
+          polylineGlow: {
+            color: { rgba: [255, 200, 60, 200] },
+            glowPower: 0.35,
+          },
+        },
+        width: 4,
+      },
     },
   ];
   return JSON.stringify(czml);
 }
 
 async function applyCzml() {
-  activeFeature.value = 'czml';
+  activeFeature.value = "czml";
   removeAll();
   const v = viewer.value;
   if (!v) return;
-  statusText.value = '正在加载 CZML（时间动态数据）…';
+  statusText.value = "正在加载 CZML（时间动态数据）…";
   const ds = await Cesium.CzmlDataSource.load(buildCzml());
   v.dataSources.add(ds);
   loaded.push(ds as unknown as Cesium.CustomDataSource);
-  statusText.value = 'CZML 加载完成：点击 ▶ 播放，卫星沿插值轨迹运动';
+  statusText.value = "CZML 加载完成：点击 ▶ 播放，卫星沿插值轨迹运动";
 }
 
 /* ---------- 数据源样式化 ---------- */
 
 function applyStyle() {
-  activeFeature.value = 'style';
+  activeFeature.value = "style";
   const v = viewer.value;
   if (!v) return;
   // 1.145：直接取第一个数据源，任何 DataSource 都有 entities
   const ds = v.dataSources.get(0);
   if (!ds) {
-    statusText.value = '请先加载一种数据';
+    statusText.value = "请先加载一种数据";
     return;
   }
   ds.entities.values.forEach((e) => {
     const poly = e.polygon;
     if (poly?.material instanceof Cesium.ColorMaterialProperty) {
-      poly.material = new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString('#e67e22').withAlpha(0.5));
+      poly.material = new Cesium.ColorMaterialProperty(
+        Cesium.Color.fromCssColorString("#e67e22").withAlpha(0.5)
+      );
     }
   });
   statusText.value = `已修改数据源样式：全部面要素改为橙色`;
 }
 
 function applyClear() {
-  activeFeature.value = 'geojson';
+  activeFeature.value = "geojson";
   removeAll();
-  statusText.value = '已清除全部数据源';
+  statusText.value = "已清除全部数据源";
 }
 
 const codeMap: Record<string, () => string> = {
@@ -288,16 +332,40 @@ KmlDataSource 支持：Placemark、Style（Icon/Label）、LineString、多边�
 这正是“轨迹模拟”应用页的技术基础。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'geojson' ? 'primary' : 'default'" @click="applyGeoJson">加载 GeoJSON</n-button>
-      <n-button size="small" :type="activeFeature === 'kml' ? 'primary' : 'default'" @click="applyKml">加载 KML</n-button>
-      <n-button size="small" :type="activeFeature === 'czml' ? 'primary' : 'default'" @click="applyCzml">加载 CZML</n-button>
-      <n-button size="small" :type="activeFeature === 'style' ? 'primary' : 'default'" @click="applyStyle">样式化数据源</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'geojson' ? 'primary' : 'default'"
+        @click="applyGeoJson"
+        >加载 GeoJSON</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'kml' ? 'primary' : 'default'"
+        @click="applyKml"
+        >加载 KML</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'czml' ? 'primary' : 'default'"
+        @click="applyCzml"
+        >加载 CZML</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'style' ? 'primary' : 'default'"
+        @click="applyStyle"
+        >样式化数据源</n-button
+      >
       <n-button size="small" quaternary @click="applyClear">清除</n-button>
     </div>
 
@@ -310,7 +378,11 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       @split-change="onSplitChange"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </template>
     </SplitViewer>
   </div>
