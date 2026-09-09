@@ -1,25 +1,26 @@
 <script setup lang="ts">
-import * as Cesium from 'cesium';
-import { onMounted, ref } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import CodePanel from '@/components/base/CodePanel.vue';
+import * as Cesium from "cesium";
+import { onMounted, ref } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import CodePanel from "@/components/base/CodePanel.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
-const activeFeature = ref('setView');
-const statusText = ref('相机状态：');
+const activeFeature = ref("setView");
+const activeIndex = ref(0); // 当前选中的城市索引，用于区分同功能下的不同城市按钮
+const statusText = ref("相机状态：");
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "esri",
   camera: { position: [108.9, 34.2, 3000000], pitch: -60 },
 });
 
 // 四个演示目标城市
 const CITIES = [
-  { name: '北京', lon: 116.397, lat: 39.909, height: 8000 },
-  { name: '西安', lon: 108.94, lat: 34.341, height: 6000 },
-  { name: '上海', lon: 121.4737, lat: 31.2304, height: 8000 },
-  { name: '广州', lon: 113.2644, lat: 23.1291, height: 8000 },
+  { name: "北京", lon: 116.397, lat: 39.909, height: 8000 },
+  { name: "西安", lon: 108.94, lat: 34.341, height: 6000 },
+  { name: "上海", lon: 121.4737, lat: 31.2304, height: 8000 },
+  { name: "广州", lon: 113.2644, lat: 23.1291, height: 8000 },
 ];
 
 // 场景标记点（供 lookAt / 包围球演示）
@@ -31,10 +32,15 @@ function buildMarkers() {
     markers.push(
       s.entities.add({
         position: Cesium.Cartesian3.fromDegrees(c.lon, c.lat, 0),
-        point: { pixelSize: 10, color: Cesium.Color.fromCssColorString('#4a9eff'), outlineColor: Cesium.Color.WHITE, outlineWidth: 2 },
+        point: {
+          pixelSize: 10,
+          color: Cesium.Color.fromCssColorString("#4a9eff"),
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 2,
+        },
         label: {
           text: c.name,
-          font: '14px sans-serif',
+          font: "14px sans-serif",
           pixelOffset: new Cesium.Cartesian2(0, -24),
           fillColor: Cesium.Color.WHITE,
           outlineColor: Cesium.Color.BLACK,
@@ -47,7 +53,8 @@ function buildMarkers() {
 }
 
 function applySetView(index: number) {
-  activeFeature.value = 'setView';
+  activeFeature.value = "setView";
+  activeIndex.value = index;
   const c = CITIES[index]!;
   viewer.value?.camera.setView({
     destination: Cesium.Cartesian3.fromDegrees(c.lon, c.lat, c.height),
@@ -57,11 +64,16 @@ function applySetView(index: number) {
 }
 
 function applyFlyTo(index: number) {
-  activeFeature.value = 'flyTo';
+  activeFeature.value = "flyTo";
+  activeIndex.value = index;
   const c = CITIES[index]!;
   viewer.value?.camera.flyTo({
     destination: Cesium.Cartesian3.fromDegrees(c.lon, c.lat, c.height),
-    orientation: { heading: Cesium.Math.toRadians(20), pitch: Cesium.Math.toRadians(-45), roll: 0 },
+    orientation: {
+      heading: Cesium.Math.toRadians(20),
+      pitch: Cesium.Math.toRadians(-45),
+      roll: 0,
+    },
     duration: 2.5, // 飞行时长（秒）
     complete: () => (statusText.value = `flyTo：已到达 ${c.name}`),
   });
@@ -69,28 +81,39 @@ function applyFlyTo(index: number) {
 }
 
 function applyLookAt() {
-  activeFeature.value = 'lookAt';
+  activeFeature.value = "lookAt";
+  activeIndex.value = -1;
   const v = viewer.value;
   if (!v) return;
   const target = Cesium.Cartesian3.fromDegrees(108.94, 34.341, 0);
   // lookAt 相机不动，观察方向指向目标点；offset 为相对目标的偏移（HeadingPitchRange）
-  v.camera.lookAt(target, new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-35), 25000));
-  statusText.value = 'lookAt：相机看向西安钟楼（偏移 25km 高空）';
+  v.camera.lookAt(
+    target,
+    new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-35), 25000)
+  );
+  statusText.value = "lookAt：相机看向西安钟楼（偏移 25km 高空）";
 }
 
 function applyBoundingSphere() {
-  activeFeature.value = 'boundingSphere';
+  activeFeature.value = "boundingSphere";
+  activeIndex.value = -1;
   const v = viewer.value;
   if (!v) return;
   // 用所有标记点生成包围球，一键飞到能把它们全部框住的视角
-  const positions = CITIES.map((c) => Cesium.Cartesian3.fromDegrees(c.lon, c.lat, 0));
+  const positions = CITIES.map((c) =>
+    Cesium.Cartesian3.fromDegrees(c.lon, c.lat, 0)
+  );
   const sphere = Cesium.BoundingSphere.fromPoints(positions);
-  v.camera.flyToBoundingSphere(sphere, { duration: 2.5, offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-60), 0) });
-  statusText.value = 'flyToBoundingSphere：自动取景全部城市';
+  v.camera.flyToBoundingSphere(sphere, {
+    duration: 2.5,
+    offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-60), 0),
+  });
+  statusText.value = "flyToBoundingSphere：自动取景全部城市";
 }
 
 function applyPosition() {
-  activeFeature.value = 'position';
+  activeFeature.value = "position";
+  activeIndex.value = -1;
   const cam = viewer.value?.camera;
   if (!cam) return;
   const carto = cam.positionCartographic;
@@ -104,13 +127,14 @@ function applyPosition() {
 }
 
 function applyReset() {
-  activeFeature.value = 'setView';
+  activeFeature.value = "setView";
+  activeIndex.value = 0;
   viewer.value?.camera.flyTo({
     destination: Cesium.Cartesian3.fromDegrees(108.9, 34.2, 3000000),
     orientation: { heading: 0, pitch: Cesium.Math.toRadians(-60), roll: 0 },
     duration: 1.2,
   });
-  statusText.value = '相机状态：';
+  statusText.value = "相机状态：";
 }
 
 onMounted(() => {
@@ -186,7 +210,8 @@ orientation 的 heading/pitch/roll 控制朝向：
 
 【观察】点击“北京/西安/上海/广州”，画面瞬间切换。`,
 
-  flyTo: () => `【原理】flyTo 在 duration 秒内做平滑插值飞行（默认 easeInOut 曲线），
+  flyTo:
+    () => `【原理】flyTo 在 duration 秒内做平滑插值飞行（默认 easeInOut 曲线），
 中途可被用户操作或下一次 flyTo 打断，触发 cancel 回调。
 
 【参数】
@@ -197,7 +222,8 @@ orientation 的 heading/pitch/roll 控制朝向：
 
 【要点】连续调用 flyTo 会取消上一次飞行，实现“飞行队列”需要自行编排。`,
 
-  lookAt: () => `【原理】lookAt 把相机固定在与目标相对偏移的位置，视线始终对准目标。
+  lookAt:
+    () => `【原理】lookAt 把相机固定在与目标相对偏移的位置，视线始终对准目标。
 HeadingPitchRange 描述相机相对目标的位置：
 • heading：绕目标水平旋转角
 • pitch：相对目标的高低位（负值为从上方看）
@@ -205,7 +231,8 @@ HeadingPitchRange 描述相机相对目标的位置：
 
 【观察】点击后相机“钉”在西安钟楼上方 25km 处，拖拽/缩放都围绕它进行。`,
 
-  boundingSphere: () => `【原理】BoundingSphere（包围球）是 Cesium 空间计算的基础：
+  boundingSphere:
+    () => `【原理】BoundingSphere（包围球）是 Cesium 空间计算的基础：
 用最小外接球包住一组点/对象。flyToBoundingSphere 依据包围球自动
 计算合适的相机距离与视角，常用于“一键框选全部要素”。
 
@@ -218,28 +245,77 @@ HeadingPitchRange 描述相机相对目标的位置：
 需要不断读取并更新相机状态。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'setView' ? 'primary' : 'default'" @click="applySetView(0)">setView · 北京</n-button>
-      <n-button size="small" :type="activeFeature === 'setView' ? 'primary' : 'default'" @click="applySetView(1)">setView · 西安</n-button>
-      <n-button size="small" :type="activeFeature === 'flyTo' ? 'primary' : 'default'" @click="applyFlyTo(2)">flyTo · 上海</n-button>
-      <n-button size="small" :type="activeFeature === 'flyTo' ? 'primary' : 'default'" @click="applyFlyTo(3)">flyTo · 广州</n-button>
-      <n-button size="small" :type="activeFeature === 'lookAt' ? 'primary' : 'default'" @click="applyLookAt">lookAt · 西安钟楼</n-button>
-      <n-button size="small" :type="activeFeature === 'boundingSphere' ? 'primary' : 'default'" @click="applyBoundingSphere">包围球取景</n-button>
-      <n-button size="small" :type="activeFeature === 'position' ? 'primary' : 'default'" @click="applyPosition">读取相机状态</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'setView' && activeIndex === 0 ? 'primary' : 'default'"
+        @click="applySetView(0)"
+        >setView · 北京</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'setView' && activeIndex === 1 ? 'primary' : 'default'"
+        @click="applySetView(1)"
+        >setView · 西安</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'flyTo' && activeIndex === 2 ? 'primary' : 'default'"
+        @click="applyFlyTo(2)"
+        >flyTo · 上海</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'flyTo' && activeIndex === 3 ? 'primary' : 'default'"
+        @click="applyFlyTo(3)"
+        >flyTo · 广州</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'lookAt' ? 'primary' : 'default'"
+        @click="applyLookAt"
+        >lookAt · 西安钟楼</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'boundingSphere' ? 'primary' : 'default'"
+        @click="applyBoundingSphere"
+        >包围球取景</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'position' ? 'primary' : 'default'"
+        @click="applyPosition"
+        >读取相机状态</n-button
+      >
       <n-button size="small" quaternary @click="applyReset">重置</n-button>
     </div>
 
     <div class="flex min-h-0 flex-1 gap-3">
-      <div class="relative min-w-0 flex-1 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+      <div
+        class="relative min-w-0 flex-1 overflow-hidden rounded-lg border border-gray-200 shadow-sm"
+      >
         <div ref="containerRef" class="h-full w-full"></div>
-        <div class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
+        <div
+          class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
+          {{ statusText }}
+        </div>
       </div>
-      <CodePanel :title="activeFeature" :code="code" :explanation="explanation" />
+      <CodePanel
+        :title="activeFeature"
+        :code="code"
+        :explanation="explanation"
+      />
     </div>
   </div>
 </template>

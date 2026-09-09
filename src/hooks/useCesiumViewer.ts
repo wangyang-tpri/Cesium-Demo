@@ -132,13 +132,14 @@ export function useCesiumViewer(
       },
     });
 
-    // 时钟配置（若提供）
+    // 时钟配置（若提供）—— 只设置显式传入的参数，避免把 startTime 等设为 undefined
     if (options.clock) {
-      v.clock.startTime = options.clock.start;
-      v.clock.stopTime = options.clock.stop;
-      v.clock.currentTime = options.clock.currentTime ?? options.clock.start;
-      v.clock.multiplier = options.clock.multiplier ?? 1;
-      v.clock.clockRange = options.clock.range ?? Cesium.ClockRange.LOOP_STOP;
+      if (options.clock.start) v.clock.startTime = options.clock.start;
+      if (options.clock.stop) v.clock.stopTime = options.clock.stop;
+      if (options.clock.currentTime) v.clock.currentTime = options.clock.currentTime;
+      else if (options.clock.start) v.clock.currentTime = options.clock.start;
+      if (options.clock.multiplier) v.clock.multiplier = options.clock.multiplier;
+      if (options.clock.range) v.clock.clockRange = options.clock.range;
     }
 
     // 每帧回调

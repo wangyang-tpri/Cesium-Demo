@@ -95,17 +95,19 @@ function applyCustom() {
   const v = viewer.value;
   if (!v) return;
   // 自定义着色器：像素化 + 灰度
+  // 1.145：PostProcessStage 走 GLSL 3.00，用 in 替代 varying，
+  // texture() 替代 texture2D()；out_FragColor 由框架自动声明，无需手动写
   const stage = new Cesium.PostProcessStage({
     fragmentShader: `
+      in vec2 v_textureCoordinates;
       uniform sampler2D colorTexture;
-      varying vec2 v_texCoord;
       void main() {
         float pixelSize = 5.0;
         vec2 dxy = pixelSize / czm_viewport.zw;
-        vec2 uv = floor(v_texCoord / dxy) * dxy + dxy * 0.5;
-        vec4 color = texture2D(colorTexture, uv);
+        vec2 uv = floor(v_textureCoordinates / dxy) * dxy + dxy * 0.5;
+        vec4 color = texture(colorTexture, uv);
         float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-        gl_FragColor = vec4(vec3(gray), color.a);
+        out_FragColor = vec4(vec3(gray), color.a);
       }
     `,
   });
@@ -151,20 +153,22 @@ const stage =
     .createBlackAndWhiteStage()
 viewer.scene.postProcessStages.add(stage)`,
 
-  custom: () => `// ⑤ 自定义全屏着色器（GLSL）
+  custom: () => `// ⑤ 自定义全屏着色器（GLSL 3.00）
+// 1.145：用 in 替代 varying，texture() 替代 texture2D()；
+// out_FragColor 由框架自动声明，无需手动写
 const stage = new Cesium.PostProcessStage({
   fragmentShader: \`
+    in vec2 v_textureCoordinates;
     uniform sampler2D colorTexture;
-    varying vec2 v_texCoord;
     void main() {
       // 像素化
       float pixelSize = 5.0;
       vec2 dxy = pixelSize / czm_viewport.zw;
-      vec2 uv = floor(v_texCoord / dxy) * dxy;
+      vec2 uv = floor(v_textureCoordinates / dxy) * dxy + dxy * 0.5;
       // 灰度
-      vec4 color = texture2D(colorTexture, uv);
+      vec4 color = texture(colorTexture, uv);
       float gray = dot(color.rgb, vec3(0.299,0.587,0.114));
-      gl_FragColor = vec4(vec3(gray), color.a);
+      out_FragColor = vec4(vec3(gray), color.a);
     }\`,
 })
 viewer.scene.postProcessStages.add(stage)`,
@@ -191,13 +195,16 @@ createBrightnessStage / createLensFlareStage / createDepthOfFieldStage…`,
   bw: () => `【原理】黑白滤镜 = 亮度加权求和（Rec.601 系数）。
 同族还有 createBrightnessStage（亮度调整）等。`,
 
-  custom: () => `【原理】自定义阶段核心是 fragmentShader：
-• uniform sampler2D colorTexture：上一阶段输出
-• varying vec2 v_texCoord：UV 坐标
+  custom: () => `【原理】自定义阶段核心是 fragmentShader（GLSL 3.00）：
+• in vec2 v_textureCoordinates：UV 坐标（需手动声明，顶点着色器传递）
+• uniform sampler2D colorTexture：上一阶段输出（需手动声明）
+• out_FragColor：输出颜色（框架自动声明，直接赋值即可）
 • czm_viewport：内置 uniform（像素尺寸等）
+• texture()：GLSL 3.00 采样函数，替代 texture2D()
 任何画面效果（景深、模糊、锐化、HDR 调色）都可以用 GLSL 实现。
 
-【要点】shader 字符串中用 \` 模板串可拼接 uniforms；多阶段按添加顺序执行。`,
+【要点】1.145 起 PostProcessStage 走 GLSL 3.00，禁止用 varying 关键字；
+需手动声明 in/uniform 变量，但 out_FragColor 不用声明；多阶段按添加顺序执行。`,
 };
 
 const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);

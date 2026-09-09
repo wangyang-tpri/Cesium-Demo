@@ -12,6 +12,8 @@ const statusText = ref('粒子系统：火焰 / 喷泉 / 降雨 / 降雪。');
 const { viewer } = useCesiumViewer(containerRef, {
   baseLayer: 'esri',
   camera: { position: [108.94, 34.34, 6000], pitch: -50 },
+  // 粒子系统依赖时钟推进（frameState.time 变化 → dt > 0 → 发射粒子），必须启用动画
+  clock: { shouldAnimate: true },
 });
 
 const systems: Cesium.ParticleSystem[] = [];
@@ -73,25 +75,21 @@ function applyFire() {
   const system = new Cesium.ParticleSystem({
     modelMatrix: Cesium.Transforms.eastNorthUpToFixedFrame(pos),
     emitter: new Cesium.ConeEmitter(Cesium.Math.toRadians(20)), // 锥形向上喷射
-    startColor: Cesium.Color.WHITE.withAlpha(1),
-    endColor: Cesium.Color.YELLOW.withAlpha(0.8),
-    startScale: 3,
-    endScale: 1,
-    imageSize: new Cesium.Cartesian2(60, 60),
-    speed: 15,
-    emissionRate: 200,
-    lifetime: 10,
+    startColor: Cesium.Color.fromCssColorString('#ff9f43').withAlpha(0.9),
+    endColor: Cesium.Color.fromCssColorString('#e74c3c').withAlpha(0.1),
+    startScale: 1.2,
+    endScale: 0.1,
+    imageSize: new Cesium.Cartesian2(14, 14),
+    speed: 8,
+    emissionRate: 60,
+    lifetime: 16,
     updateCallback: makeGravity(0),
     image: particleImage,
   });
   v.scene.primitives.add(system);
   systems.push(system);
-  // 调试：把相机直接飞到粒子位置近处
-  v.camera.setView({
-    destination: Cesium.Cartesian3.fromDegrees(108.94, 34.34, 300),
-    orientation: { pitch: Cesium.Math.toRadians(-45) },
-  });
-  statusText.value = `火焰：已添加粒子系统，场景 primitives 数量=${v.scene.primitives.length}，相机已拉近`;
+  flyTo(pos);
+  statusText.value = '火焰：ConeEmitter 锥形发射 + 颜色渐变 + 缩小消失';
 }
 
 function applyFountain() {
