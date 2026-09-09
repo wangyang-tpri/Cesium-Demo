@@ -17,7 +17,7 @@ const TRAJ_STOP = Cesium.JulianDate.fromIso8601("2026-01-01T00:10:00Z");
 
 const { viewer } = useCesiumViewer(containerRef, {
   baseLayer: "tianditu-img",
-  camera: { position: [108.94, 34.34, 90000], pitch: -60 },
+  camera: { position: [108.94, 33.88, 90000], pitch: -60 },
   ui: { animation: true, timeline: true },
   clock: {
     start: TRAJ_START,
@@ -83,15 +83,15 @@ function buildCraft() {
   if (!v || built) return;
   const { position, samples } = buildTrajectory();
 
-  // 轨迹线（全路径可视化）
+  // 轨迹线（全路径可视化）—— 蓝色虚线
   if (samples.length) {
     pathEntity = v.entities.add({
       polyline: {
         positions: samples,
-        width: 3,
-        material: new Cesium.PolylineGlowMaterialProperty({
-          glowPower: 0.35,
-          color: Cesium.Color.fromCssColorString("#00d2ff"),
+        width: 6,
+        material: new Cesium.PolylineDashMaterialProperty({
+          color: Cesium.Color.fromCssColorString("#409eff"),
+          dashLength: 16,
         }),
       },
     });
@@ -116,14 +116,11 @@ function buildCraft() {
       outlineWidth: 2,
     },
     path: {
-      resolution: 60,
+      resolution: 10,
       leadTime: 120, // 显示未来 2 分钟
       trailTime: 300, // 显示过去 5 分钟
-      width: 4,
-      material: new Cesium.PolylineGlowMaterialProperty({
-        glowPower: 0.3,
-        color: Cesium.Color.fromCssColorString("#ff6b6b"),
-      }),
+      width: 6,
+      material: Cesium.Color.fromCssColorString("#ff4757"),
     },
     label: {
       text: "飞行器",
@@ -178,12 +175,19 @@ function applyFollow() {
   const v = viewer.value;
   if (!v) return;
   following.value = !following.value;
-  if (following.value && !v.clock.shouldAnimate) {
-    v.clock.shouldAnimate = true;
+  if (following.value) {
+    if (!v.clock.shouldAnimate) v.clock.shouldAnimate = true;
+    statusText.value = "跟随视角：相机锁定飞行器（lookAt 相对偏移）";
+  } else {
+    // 退出 lookAt：先恢复相机变换矩阵，再 flyTo 回初始全局视角
+    v.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+    v.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(108.94, 33.88, 90000),
+      orientation: { heading: 0, pitch: Cesium.Math.toRadians(-60), roll: 0 },
+      duration: 1.5,
+    });
+    statusText.value = "已退出跟随视角，相机飞回全局视角";
   }
-  statusText.value = following.value
-    ? "跟随视角：相机锁定飞行器（lookAt 相对偏移）"
-    : "已退出跟随视角";
 }
 
 function applyReset() {
@@ -219,13 +223,48 @@ viewer.entities.add({
     new Cesium.VelocityOrientationProperty(position), // 自动朝向
   cylinder: { length: 400, topRadius: 0, bottomRadius: 80, ... },
   path: {   // 实时轨迹
-    resolution: 60,
+    resolution: 10,
     leadTime: 120,   // 显示未来轨迹
     trailTime: 300,  // 显示过去轨迹
-    width: 4,
-    material: ...,
+    width: 6,
+    material: Color.RED,
   },
 })`,
+  play: () => `// ① 播放/暂停：控制时钟 shouldAnimate
+viewer.clock.shouldAnimate = !viewer.clock.shouldAnimate
+
+// ② 倍速：clock.multiplier（1 真实秒 = N 模拟秒）
+viewer.clock.multiplier = 60   // 60倍速
+// 可选：10 / 60 / 300 / 600
+
+// ③ 循环：ClockRange.LOOP_STOP
+viewer.clock.clockRange = Cesium.ClockRange.LOOP_STOP
+// 到达 stopTime 后自动回到 startTime
+
+// ④ 时间轴联动：Entity.position 是 SampledPositionProperty
+// clock 推进 → position.getValue(time) 插值 → 实体自动运动`,
+  look: () => `// ① 进入跟随：camera.lookAt 锁定目标
+const pos = craft.position.getValue(viewer.clock.currentTime)
+viewer.camera.lookAt(
+  pos,
+  new Cesium.HeadingPitchRange(
+    Cesium.Math.toRadians(180), // 从正后方看
+    Cesium.Math.toRadians(-25), // 俯角
+    3000                          // 距离
+  )
+)
+// lookAt 会修改相机变换矩阵，相机被锁定到目标
+
+// ② 每帧更新：onTick 中重新 lookAt
+viewer.clock.onTick.addEventListener((time) => {
+  const pos = craft.position.getValue(time)
+  viewer.camera.lookAt(pos, offset)  // 持续跟随
+})
+
+// ③ 退出跟随：必须恢复变换矩阵 + 飞回自由视角
+viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY)
+viewer.camera.flyTo({ destination: initialPos, duration: 1.5 })
+// 注意：只设 following=false 不够，必须调用 lookAtTransform`,
 };
 
 const explainMap: Record<string, () => string> = {
@@ -236,11 +275,40 @@ const explainMap: Record<string, () => string> = {
 
 【配套】
 • VelocityOrientationProperty：由位置自动推导速度方向（飞行器朝向）
-• path：按时间渲染“过去/未来”轨迹（leadTime/trailTime 控制）
+• path：按时间渲染"过去/未来"轨迹（leadTime/trailTime 控制）
 • path.resolution：轨迹采样分辨率（秒）
 
-【要点】与“时钟”页的 CallbackProperty 方案相比，
+【要点】与"时钟"页的 CallbackProperty 方案相比，
 采样方案数据可回放、可预测，是工程轨迹的标准做法。`,
+  play: () => `【原理】播放控制 = 时钟驱动 + 位置属性插值：
+1. clock.shouldAnimate：true=播放，false=暂停（时钟是否推进）
+2. clock.multiplier：倍速，1 真实秒 = N 模拟秒（如 60 表示 60 倍速）
+3. clock.clockRange：LOOP_STOP 到达终点后循环回起点
+4. Entity.position 是 SampledPositionProperty，clock 推进时自动
+   调用 getValue(currentTime) 插值得到当前位置 → 实体运动
+
+【时间轴】底部 timeline 组件可拖拽/点击跳转到任意时刻，
+与 clock.currentTime 双向绑定。
+
+【要点】暂停只是停止时钟推进，实体位置保持在当前时刻，
+不会消失；再次播放从暂停处继续。`,
+  look: () => `【原理】跟随视角 = camera.lookAt 锁定目标 + 每帧更新：
+1. camera.lookAt(target, HeadingPitchRange)：
+   - target：锁定点（飞行器当前位置）
+   - HeadingPitchRange：相对目标的朝向(heading)、俯仰(pitch)、距离(range)
+   - 调用后相机会"粘"在目标上，目标移动相机跟随
+
+2. 每帧更新：onTick 中重新调用 lookAt，因为目标位置随时间变化
+
+3. 【关键坑】lookAt 会修改相机的变换矩阵（transform），
+   退出时必须调用 camera.lookAtTransform(Matrix4.IDENTITY)
+   恢复自由变换，否则相机会一直锁定目标，无法自由旋转/缩放。
+   只设 following=false 是不够的！
+
+4. 退出后可 flyTo 飞回全局视角，给用户平滑的过渡体验。
+
+【扩展】HeadingPitchRange 的 heading=180° 表示从正后方看，
+pitch=-25° 表示俯视 25°，range=3000 表示距离目标 3000 米。`,
 };
 
 const { code, explanation } = useCodeExplain(
@@ -286,7 +354,6 @@ const { code, explanation } = useCodeExplain(
       :explanation="explanation"
       :default-split-size="70"
       storage-key="trajectory-split"
-      @split-change="onSplitChange"
     >
       <template #scene-overlay>
         <div
