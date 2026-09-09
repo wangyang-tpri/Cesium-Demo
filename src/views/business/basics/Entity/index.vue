@@ -39,6 +39,15 @@ function toggleEntity(feature: string, entity: Cesium.Entity) {
     idMap.set(feature, entity.id);
     added.add(feature);
     statusText.value = `已添加：${feature}（实体总数 ${v.entities.values.length}）`;
+    // 飞行到该实体，方便查看
+    v.flyTo(entity, {
+      duration: 1.5,
+      offset: new Cesium.HeadingPitchRange(
+        0,
+        Cesium.Math.toRadians(-45),
+        2000
+      ),
+    });
   }
 }
 

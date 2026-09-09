@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { inject, ref, type ComponentPublicInstance, type Ref } from "vue";
+import { inject, onBeforeUnmount, onMounted, ref, type ComponentPublicInstance, type Ref } from "vue";
 import CodePanel from "./CodePanel.vue";
+import { onCameraChange, estimateZoomLevel, formatHeight } from "@/utils/currentViewer";
 
 const props = withDefaults(
   defineProps<{
@@ -41,6 +42,26 @@ function setContainerRef(el: Element | ComponentPublicInstance | null) {
 
 // 从 localStorage 读取或使用默认值
 const splitSize = ref<number>(props.defaultSplitSize);
+
+// 实时缩放层级和相机高度
+const zoomLevel = ref<number>(0);
+const cameraHeight = ref<string>('0 m');
+
+let removeCameraListener: (() => void) | null = null;
+
+onMounted(() => {
+  // 注册相机变化监听器，实时更新缩放层级
+  removeCameraListener = onCameraChange((viewer) => {
+    const height = viewer.camera.positionCartographic.height;
+    cameraHeight.value = formatHeight(height);
+    zoomLevel.value = estimateZoomLevel(height);
+  });
+});
+
+onBeforeUnmount(() => {
+  removeCameraListener?.();
+  removeCameraListener = null;
+});
 </script>
 
 <template>
@@ -58,6 +79,12 @@ const splitSize = ref<number>(props.defaultSplitSize);
           <div :ref="setContainerRef" class="h-full w-full"></div>
           <!-- 左侧场景覆盖层 slot：状态文本、工具栏、图例等 -->
           <slot name="scene-overlay"></slot>
+          <!-- 右下角：实时缩放层级和相机高度 -->
+          <div class="absolute bottom-3 right-3 z-10 flex items-center gap-2 rounded bg-black/60 px-3 py-1.5 text-xs text-white">
+            <span class="font-mono">Zoom {{ zoomLevel }}</span>
+            <span class="text-white/40">|</span>
+            <span class="font-mono">H {{ cameraHeight }}</span>
+          </div>
         </div>
       </template>
       <template #2>

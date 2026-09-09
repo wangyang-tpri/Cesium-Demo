@@ -1,6 +1,7 @@
 import * as Cesium from 'cesium';
 import { onBeforeUnmount, onMounted, shallowRef, watch, type Ref } from 'vue';
 import { createTiandituVecLayers, createTiandituImgLayers } from '@/utils/tianditu';
+import { setCurrentViewer } from '@/utils/currentViewer';
 
 export interface UseCesiumViewerOptions {
   /** 影像底图：'tianditu-vec'(默认, 天地图街道) | 'tianditu-img'(天地图影像) | 'esri' | 'osm' | 'none'（无底图） | 自定义 ImageryLayer */
@@ -133,6 +134,9 @@ export function useCesiumViewer(
     });
     viewer.value = v;
 
+    // 设置全局当前 viewer，供 SplitViewer 等公共组件监听相机变化
+    setCurrentViewer(v);
+
     // 手动添加底图（支持多层，如天地图底图+注记）
     const baseLayers = buildBaseLayers();
     for (const layer of baseLayers) {
@@ -182,6 +186,8 @@ export function useCesiumViewer(
     resizeObserver = null;
     tickRemove?.();
     tickRemove = null;
+    // 清除全局当前 viewer
+    setCurrentViewer(null);
     viewer.value?.destroy();
     viewer.value = null;
     options.onDispose?.();

@@ -134,9 +134,26 @@ function applyWorldToScreen() {
 function onFeatureClick(feature: string) {
   activeFeature.value = feature;
   if (feature === "deg2cart") {
-    statusText.value = "经度/纬度/高度 → Cartesian3 地固系坐标（单位：米）";
+    // 实际执行转换：经纬度(度) + 高度 → Cartesian3
+    const lon = 108.94;
+    const lat = 34.341;
+    const height = 0;
+    const cartesian = Cesium.Cartesian3.fromDegrees(lon, lat, height);
+    statusText.value =
+      `经纬度(${lon}°, ${lat}°, ${height}m) → Cartesian3：` +
+      `x=${cartesian.x.toFixed(2)}, y=${cartesian.y.toFixed(2)}, z=${cartesian.z.toFixed(2)}（单位：米）`;
   } else if (feature === "cart2carto") {
-    statusText.value = "Cartesian3 → Cartographic(弧度) → 角度";
+    // 实际执行转换：Cartesian3 → Cartographic(弧度) → 角度
+    const cartesian = Cesium.Cartesian3.fromDegrees(108.94, 34.341, 0);
+    const carto = Cesium.Cartographic.fromCartesian(cartesian);
+    const lonDeg = Cesium.Math.toDegrees(carto.longitude);
+    const latDeg = Cesium.Math.toDegrees(carto.latitude);
+    statusText.value =
+      `Cartesian3(x=${cartesian.x.toFixed(2)}, y=${cartesian.y.toFixed(2)}, z=${cartesian.z.toFixed(2)}) → ` +
+      `弧度(lon=${carto.longitude.toFixed(6)}, lat=${carto.latitude.toFixed(6)}) → ` +
+      `角度(lon=${lonDeg.toFixed(4)}°, lat=${latDeg.toFixed(4)}°, height=${carto.height.toFixed(2)}m)`;
+  } else if (feature === "screen2world") {
+    statusText.value = "点击地球任意位置，体验“屏幕坐标 → 地理坐标”转换（结果显示在落点标注和此处）";
   }
 }
 
