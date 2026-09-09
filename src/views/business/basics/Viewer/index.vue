@@ -1,16 +1,23 @@
 <script setup lang="ts">
-import * as Cesium from 'cesium';
-import { onMounted, ref } from 'vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
-import CodePanel from '@/components/base/CodePanel.vue';
+import * as Cesium from "cesium";
+import { onMounted, provide, ref } from "vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
+import SplitViewer from "@/components/base/SplitViewer.vue";
 
 const containerRef = ref<HTMLDivElement | null>(null);
-const activeFeature = ref('create');
+provide("splitViewerContainerRef", containerRef);
+
+const activeFeature = ref("create");
+
+// 分割条拖拽时通知 viewer 重新计算渲染尺寸
+function onSplitChange() {
+  viewer.value?.resize();
+}
 
 // 本页开启全部 UI 控件，便于演示控件的显示/隐藏
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'esri',
+  baseLayer: "esri",
   camera: { position: [108.9, 34.2, 2200000], pitch: -55 },
   ui: {
     animation: true,
@@ -25,16 +32,59 @@ const { viewer } = useCesiumViewer(containerRef, {
 });
 
 // 供 UI 开关引用的控件容器（延迟到 viewer 创建后取值）
-const uiParts: { key: string; label: string; get: () => HTMLElement | null }[] = [
-  { key: 'homeButton', label: '主页按钮', get: () => (viewer.value?.homeButton.container as HTMLElement | null) ?? null },
-  { key: 'sceneModePicker', label: '场景模式', get: () => (viewer.value?.sceneModePicker.container as HTMLElement | null) ?? null },
-  { key: 'geocoder', label: '地理搜索', get: () => (viewer.value?.geocoder.container as HTMLElement | null) ?? null },
-  { key: 'baseLayerPicker', label: '底图选择', get: () => (viewer.value?.baseLayerPicker.container as HTMLElement | null) ?? null },
-  { key: 'navigationHelpButton', label: '帮助按钮', get: () => (viewer.value?.navigationHelpButton.container as HTMLElement | null) ?? null },
-  { key: 'fullscreenButton', label: '全屏按钮', get: () => (viewer.value?.fullscreenButton.container as HTMLElement | null) ?? null },
-  { key: 'animation', label: '动画控件', get: () => (viewer.value?.animation.container as HTMLElement | null) ?? null },
-  { key: 'timeline', label: '时间轴', get: () => (viewer.value?.timeline.container as HTMLElement | null) ?? null },
-];
+const uiParts: { key: string; label: string; get: () => HTMLElement | null }[] =
+  [
+    {
+      key: "homeButton",
+      label: "主页按钮",
+      get: () =>
+        (viewer.value?.homeButton.container as HTMLElement | null) ?? null,
+    },
+    {
+      key: "sceneModePicker",
+      label: "场景模式",
+      get: () =>
+        (viewer.value?.sceneModePicker.container as HTMLElement | null) ?? null,
+    },
+    {
+      key: "geocoder",
+      label: "地理搜索",
+      get: () =>
+        (viewer.value?.geocoder.container as HTMLElement | null) ?? null,
+    },
+    {
+      key: "baseLayerPicker",
+      label: "底图选择",
+      get: () =>
+        (viewer.value?.baseLayerPicker.container as HTMLElement | null) ?? null,
+    },
+    {
+      key: "navigationHelpButton",
+      label: "帮助按钮",
+      get: () =>
+        (viewer.value?.navigationHelpButton.container as HTMLElement | null) ??
+        null,
+    },
+    {
+      key: "fullscreenButton",
+      label: "全屏按钮",
+      get: () =>
+        (viewer.value?.fullscreenButton.container as HTMLElement | null) ??
+        null,
+    },
+    {
+      key: "animation",
+      label: "动画控件",
+      get: () =>
+        (viewer.value?.animation.container as HTMLElement | null) ?? null,
+    },
+    {
+      key: "timeline",
+      label: "时间轴",
+      get: () =>
+        (viewer.value?.timeline.container as HTMLElement | null) ?? null,
+    },
+  ];
 
 const uiVisible = ref<Record<string, boolean>>(
   Object.fromEntries(uiParts.map((p) => [p.key, true]))
@@ -43,7 +93,7 @@ const uiVisible = ref<Record<string, boolean>>(
 function applyUi(show: boolean) {
   for (const p of uiParts) {
     const el = p.get();
-    if (el) el.style.display = show ? '' : 'none';
+    if (el) el.style.display = show ? "" : "none";
     uiVisible.value[p.key] = show;
   }
 }
@@ -68,7 +118,7 @@ function applyAtmosphere() {
 }
 
 function applyReset() {
-  activeFeature.value = 'create';
+  activeFeature.value = "create";
   applyUi(true);
   lightingOn.value = false;
   atmosphereOn.value = true;
@@ -93,7 +143,7 @@ function onFeatureClick(feature: string) {
 
 onMounted(() => {
   // 初始高亮当前场景对应代码
-  activeFeature.value = 'create';
+  activeFeature.value = "create";
 });
 
 const codeMap: Record<string, () => string> = {
@@ -123,7 +173,9 @@ viewer.timeline.container.style.display     = 'none'   // 时间轴
 // 显示时置回 '' 即可`,
 
   lighting: () => `// ③ 昼夜光照：根据太阳方向产生明暗面
-viewer.scene.globe.enableLighting = true   // 当前：${lightingOn.value ? '开' : '关'}
+viewer.scene.globe.enableLighting = true   // 当前：${
+    lightingOn.value ? "开" : "关"
+  }
 // ★ 需要开启 Viewer 默认的太阳（scene.sun）
 // ★ 地形/模型接收光照后呈现实时明暗变化`,
 
@@ -154,7 +206,8 @@ viewer.xxx.container.style.display 控制显隐（'none' 隐藏 / '' 显示）�
 【要点】动画控件（Animation）和时间轴（Timeline）配合时钟使用，
 在“时钟与时间轴”和“轨迹模拟”页面会真正用到。`,
 
-  lighting: () => `【原理】globe.enableLighting = true 时，Cesium 根据太阳在天空中的位置
+  lighting:
+    () => `【原理】globe.enableLighting = true 时，Cesium 根据太阳在天空中的位置
 实时计算地球表面光照，白天/黑夜分界清晰可见。
 
 【观察】切换到中国上空视角时，可看到东半球亮、西半球暗；
@@ -172,23 +225,67 @@ viewer.xxx.container.style.display 控制显隐（'none' 隐藏 / '' 显示）�
 【要点】SkyAtmosphere 只在默认 WGS84 椭球上生效。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="activeFeature === 'create' ? 'primary' : 'default'" @click="onFeatureClick('create')">创建 Viewer</n-button>
-      <n-button size="small" :type="activeFeature === 'ui' ? 'primary' : 'default'" @click="onFeatureClick('ui'); applyUi(false)">隐藏控件</n-button>
-      <n-button size="small" :type="activeFeature === 'ui' ? 'primary' : 'default'" @click="onFeatureClick('ui'); applyUi(true)">显示控件</n-button>
-      <n-button size="small" :type="activeFeature === 'lighting' ? 'primary' : 'default'" @click="onFeatureClick('lighting'); applyLighting()">昼夜光照：{{ lightingOn ? '开' : '关' }}</n-button>
-      <n-button size="small" :type="activeFeature === 'atmosphere' ? 'primary' : 'default'" @click="onFeatureClick('atmosphere'); applyAtmosphere()">大气与星空：{{ atmosphereOn ? '开' : '关' }}</n-button>
+      <n-button
+        size="small"
+        :type="activeFeature === 'create' ? 'primary' : 'default'"
+        @click="onFeatureClick('create')"
+        >创建 Viewer</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'ui' ? 'primary' : 'default'"
+        @click="
+          onFeatureClick('ui');
+          applyUi(false);
+        "
+        >隐藏控件</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'ui' ? 'primary' : 'default'"
+        @click="
+          onFeatureClick('ui');
+          applyUi(true);
+        "
+        >显示控件</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'lighting' ? 'primary' : 'default'"
+        @click="
+          onFeatureClick('lighting');
+          applyLighting();
+        "
+        >昼夜光照：{{ lightingOn ? "开" : "关" }}</n-button
+      >
+      <n-button
+        size="small"
+        :type="activeFeature === 'atmosphere' ? 'primary' : 'default'"
+        @click="
+          onFeatureClick('atmosphere');
+          applyAtmosphere();
+        "
+        >大气与星空：{{ atmosphereOn ? "开" : "关" }}</n-button
+      >
       <n-button size="small" quaternary @click="applyReset">重置</n-button>
     </div>
 
-    <div class="flex min-h-0 flex-1 gap-3">
-      <div ref="containerRef" class="relative min-w-0 flex-1 overflow-hidden rounded-lg border border-gray-200 shadow-sm"></div>
-      <CodePanel :title="activeFeature" :code="code" :explanation="explanation" />
-    </div>
+    <SplitViewer
+      :title="activeFeature"
+      :code="code"
+      :explanation="explanation"
+      :default-split-size="70"
+      @split-change="onSplitChange"
+    />
   </div>
 </template>

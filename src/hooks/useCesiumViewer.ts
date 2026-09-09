@@ -1,5 +1,5 @@
 import * as Cesium from 'cesium';
-import { onBeforeUnmount, onMounted, shallowRef, type Ref } from 'vue';
+import { onBeforeUnmount, onMounted, shallowRef, watch, type Ref } from 'vue';
 
 export interface UseCesiumViewerOptions {
   /** 影像底图：'esri'(默认) | 'osm' | 'none'（无底图） | 自定义 ImageryLayer */
@@ -99,6 +99,8 @@ export function useCesiumViewer(
   }
 
   function init() {
+    // 防止重复创建（onMounted 和 watch 可能都触发 init）
+    if (viewer.value) return;
     const container = containerRef.value;
     if (!container || container.clientWidth === 0 || container.clientHeight === 0) return;
     if (disposed) return;
@@ -169,6 +171,14 @@ export function useCesiumViewer(
     viewer.value = null;
     options.onDispose?.();
   }
+
+  // 容器 ref 可能在子组件挂载后才就绪（如 SplitViewer 封装场景），
+  // 用 watch 监听变化，容器就绪后自动初始化
+  watch(containerRef, (el) => {
+    if (el && !viewer.value && !disposed) {
+      init();
+    }
+  });
 
   onMounted(init);
   onBeforeUnmount(dispose);

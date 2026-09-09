@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import * as Cesium from 'cesium';
-import { ref } from 'vue';
+import { ref, provide } from 'vue';
 import { useCesiumViewer } from '@/hooks/useCesiumViewer';
 import { useCodeExplain } from '@/hooks/useCodeExplain';
-import CodePanel from '@/components/base/CodePanel.vue';
+import SplitViewer from '@/components/base/SplitViewer.vue';
 
 const containerRef = ref<HTMLDivElement | null>(null);
+provide("splitViewerContainerRef", containerRef);
 const activeFeature = ref('color');
 const statusText = ref('选择材质，观察同一几何体在不同材质下的表现。');
 
@@ -13,6 +14,11 @@ const { viewer } = useCesiumViewer(containerRef, {
   baseLayer: 'esri',
   camera: { position: [108.94, 34.34, 9000], pitch: -50 },
 });
+
+// 分割条拖拽时通知 viewer 重新计算渲染尺寸
+function onSplitChange() {
+  viewer.value?.resize();
+}
 
 // 实体集合：不同几何体承载不同材质
 const added = new Set<string>();
@@ -329,12 +335,17 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       <n-button size="small" quaternary @click="applyClear">清除</n-button>
     </div>
 
-    <div class="flex min-h-0 flex-1 gap-3">
-      <div class="relative min-w-0 flex-1 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
-        <div ref="containerRef" class="h-full w-full"></div>
+    <SplitViewer
+      :title="activeFeature"
+      :code="code"
+      :explanation="explanation"
+      :default-split-size="70"
+      storage-key="material-split"
+      @split-change="onSplitChange"
+    >
+      <template #scene-overlay>
         <div class="absolute left-3 top-3 z-10 rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
-      </div>
-      <CodePanel :title="activeFeature" :code="code" :explanation="explanation" />
-    </div>
+      </template>
+    </SplitViewer>
   </div>
 </template>

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import * as Cesium from 'cesium';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, provide } from 'vue';
 import { useCesiumViewer } from '@/hooks/useCesiumViewer';
 import { useCodeExplain } from '@/hooks/useCodeExplain';
-import CodePanel from '@/components/base/CodePanel.vue';
+import SplitViewer from '@/components/base/SplitViewer.vue';
 
 const containerRef = ref<HTMLDivElement | null>(null);
+provide("splitViewerContainerRef", containerRef);
 const activeFeature = ref('load');
 const statusText = ref('3D Tiles：流式加载海量三维模型（示例为带要素属性的彩色盒子）。');
 
@@ -13,6 +14,11 @@ const { viewer } = useCesiumViewer(containerRef, {
   baseLayer: 'esri',
   camera: { position: [108.94, 34.34, 3000000], pitch: -60 },
 });
+
+// 分割条拖拽时通知 viewer 重新计算渲染尺寸
+function onSplitChange() {
+  viewer.value?.resize();
+}
 
 // 公开示例数据（jsdelivr CDN，国内可达）
 const SAMPLE_TILESET =
@@ -265,12 +271,17 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       <n-button size="small" :type="activeFeature === 'bounding' ? 'primary' : 'default'" @click="applyBounding">包围球取景</n-button>
     </div>
 
-    <div class="flex min-h-0 flex-1 gap-3">
-      <div class="relative min-w-0 flex-1 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
-        <div ref="containerRef" class="h-full w-full"></div>
+    <SplitViewer
+      :title="activeFeature"
+      :code="code"
+      :explanation="explanation"
+      :default-split-size="70"
+      storage-key="tileset-split"
+      @split-change="onSplitChange"
+    >
+      <template #scene-overlay>
         <div class="absolute left-3 top-3 z-10 max-w-[70%] rounded bg-black/60 px-3 py-1.5 text-xs text-white">{{ statusText }}</div>
-      </div>
-      <CodePanel :title="activeFeature" :code="code" :explanation="explanation" />
-    </div>
+      </template>
+    </SplitViewer>
   </div>
 </template>

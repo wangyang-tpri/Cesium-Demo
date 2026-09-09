@@ -10,7 +10,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex w-[420px] shrink-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+  <div class="flex h-full w-full min-w-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
     <div class="border-b border-l-[3px] border-l-solid border-l-green-500 border-gray-100 py-2 pl-3 pr-4 text-sm font-semibold text-gray-600">
       {{ title }} · 示例代码
     </div>
