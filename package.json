@@ -13,11 +13,13 @@
   "dependencies": {
     "@vicons/ionicons5": "^0.13.0",
     "cesium": "^1.145.0",
+    "echarts": "^6.1.0",
     "naive-ui": "^2.45.3",
     "pinia": "^4.0.3",
     "unocss": "^66.10.0",
     "vfonts": "^0.0.3",
     "vue": "^3.5.42",
+    "vue-echarts": "^8.3.0",
     "vue-router": "^5.3.1"
   },
   "devDependencies": {

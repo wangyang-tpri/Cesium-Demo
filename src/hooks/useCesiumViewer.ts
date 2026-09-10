@@ -172,11 +172,7 @@ export function useCesiumViewer(
       tickRemove = () => v.clock.onTick.removeEventListener(listener);
     }
 
-    // 容器尺寸变化时同步渲染尺寸
-    resizeObserver = new ResizeObserver(() => {
-      if (viewer.value) viewer.value.resize();
-    });
-    resizeObserver.observe(container);
+    // 容器尺寸变化时同步渲染尺寸（ResizeObserver 已在 watch 中统一创建）
   }
 
   function dispose() {
@@ -196,8 +192,22 @@ export function useCesiumViewer(
   // 容器 ref 可能在子组件挂载后才就绪（如 SplitViewer 封装场景），
   // 用 watch 监听变化，容器就绪后自动初始化
   watch(containerRef, (el) => {
-    if (el && !viewer.value && !disposed) {
-      init();
+    if (!el || disposed) return;
+    // 容器就绪后立即尝试初始化
+    if (!viewer.value) init();
+    // 统一监听容器尺寸变化：
+    // 1. 如果 init 时容器尺寸为 0 导致跳过，后续尺寸变为非零时重新触发 init
+    // 2. viewer 已创建时，调用 viewer.resize() 同步渲染尺寸
+    if (!resizeObserver) {
+      resizeObserver = new ResizeObserver(() => {
+        if (disposed) return;
+        if (!viewer.value && el.clientWidth > 0 && el.clientHeight > 0) {
+          init();
+        } else if (viewer.value) {
+          viewer.value.resize();
+        }
+      });
+      resizeObserver.observe(el);
     }
   });
 

@@ -88,8 +88,12 @@ onBeforeUnmount(() => {
         </div>
       </template>
       <template #2>
-        <div class="h-full pl-3">
-          <CodePanel :title="title" :code="code" :explanation="explanation" />
+        <div class="flex h-full flex-col pl-3">
+          <div class="min-h-0 flex-1">
+            <CodePanel :title="title" :code="code" :explanation="explanation" />
+          </div>
+          <!-- 右侧面板底部插槽：可放置 ECharts 图表、统计信息等额外内容 -->
+          <slot name="bottom-panel"></slot>
         </div>
       </template>
     </n-split>
