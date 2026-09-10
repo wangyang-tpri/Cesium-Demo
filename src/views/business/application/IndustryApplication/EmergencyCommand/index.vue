@@ -59,24 +59,30 @@ function markDisasters() {
   if (!v) return;
   clearAll();
 
-  const disasters: { type: DisasterPoint['type']; pos: [number, number]; level: DisasterPoint['level']; radius: number; desc: string }[] = [
+  const disasters: {
+    type: DisasterPoint["type"];
+    position: [number, number];
+    level: DisasterPoint["level"];
+    radius: number;
+    desc: string;
+  }[] = [
     {
       type: "地震",
-      pos: [108.95, 34.22],
+      position: [108.95, 34.22],
       level: "Ⅱ级",
       radius: 2000,
       desc: "震级5.2，震源深度10km",
     },
     {
       type: "洪水",
-      pos: [108.92, 34.18],
+      position: [108.92, 34.18],
       level: "Ⅲ级",
       radius: 1500,
       desc: "河道超警戒水位1.5m",
     },
     {
       type: "火灾",
-      pos: [108.97, 34.2],
+      position: [108.97, 34.2],
       level: "Ⅳ级",
       radius: 800,
       desc: "林区火灾，过火面积约5公顷",
@@ -88,7 +94,7 @@ function markDisasters() {
     const disaster: DisasterPoint = {
       id,
       type: d.type,
-      position: d.pos,
+      position: d.position,
       level: d.level,
       affectedRadius: d.radius,
       desc: d.desc,
@@ -106,7 +112,11 @@ function markDisasters() {
     // 受灾范围（圆）
     disasterEntities.push(
       v.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(d.pos[0], d.pos[1], 0),
+        position: Cesium.Cartesian3.fromDegrees(
+          d.position[0],
+          d.position[1],
+          0
+        ),
         ellipse: {
           semiMinorAxis: d.radius,
           semiMajorAxis: d.radius,
@@ -121,7 +131,11 @@ function markDisasters() {
     // 灾害点标记
     disasterEntities.push(
       v.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(d.pos[0], d.pos[1], 50),
+        position: Cesium.Cartesian3.fromDegrees(
+          d.position[0],
+          d.position[1],
+          50
+        ),
         point: {
           pixelSize: 18,
           color,
@@ -248,46 +262,52 @@ function showResources() {
   if (disasterPoints.value.length === 0) markDisasters();
   clearResources();
 
-  const resourceData: { type: Resource['type']; name: string; pos: [number, number]; capacity: number; status: Resource['status'] }[] = [
+  const resourceData: {
+    type: Resource["type"];
+    name: string;
+    position: [number, number];
+    capacity: number;
+    status: Resource["status"];
+  }[] = [
     {
       type: "救援队伍",
       name: "消防救援一中队",
-      pos: [108.91, 34.24],
+      position: [108.91, 34.24],
       capacity: 50,
       status: "出动",
     },
     {
       type: "救援队伍",
       name: "武警应急分队",
-      pos: [108.93, 34.26],
+      position: [108.93, 34.26],
       capacity: 80,
       status: "待命",
     },
     {
       type: "物资仓库",
       name: "市级应急物资库",
-      pos: [108.89, 34.22],
+      position: [108.89, 34.22],
       capacity: 500,
       status: "待命",
     },
     {
       type: "医疗点",
       name: "中心医院急救站",
-      pos: [108.94, 34.23],
+      position: [108.94, 34.23],
       capacity: 30,
       status: "出动",
     },
     {
       type: "避难所",
       name: "市体育中心避难所",
-      pos: [108.96, 34.21],
+      position: [108.96, 34.21],
       capacity: 2000,
       status: "已满",
     },
     {
       type: "避难所",
       name: "第一中学避难所",
-      pos: [108.92, 34.19],
+      position: [108.92, 34.19],
       capacity: 1500,
       status: "待命",
     },
@@ -315,7 +335,11 @@ function showResources() {
 
     resourceEntities.push(
       v.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(r.pos[0], r.pos[1], 30),
+        position: Cesium.Cartesian3.fromDegrees(
+          r.position[0],
+          r.position[1],
+          30
+        ),
         point: {
           pixelSize: 14,
           color,

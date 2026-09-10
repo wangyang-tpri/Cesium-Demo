@@ -42,11 +42,7 @@ function toggleEntity(feature: string, entity: Cesium.Entity) {
     // 飞行到该实体，方便查看
     v.flyTo(entity, {
       duration: 1.5,
-      offset: new Cesium.HeadingPitchRange(
-        0,
-        Cesium.Math.toRadians(-45),
-        2000
-      ),
+      offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-45), 2000),
     });
   }
 }

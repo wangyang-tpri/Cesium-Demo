@@ -8,7 +8,9 @@ import SplitViewer from "@/components/base/SplitViewer.vue";
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
 const activeFeature = ref("analyze");
-const statusText = ref("可视域分析：点击「设置观察点」，在地图上点击，然后设置参数计算可视域。");
+const statusText = ref(
+  "可视域分析：点击「设置观察点」，在地图上点击，然后设置参数计算可视域。"
+);
 
 const { viewer } = useCesiumViewer(containerRef, {
   baseLayer: "tianditu-img",
@@ -59,11 +61,28 @@ function startPicking() {
       picking = false;
       // 添加观察点标记
       const carto = Cesium.Cartographic.fromCartesian(pos);
-      const elevatedPos = Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, carto.height + observerHeight.value);
+      const elevatedPos = Cesium.Cartesian3.fromRadians(
+        carto.longitude,
+        carto.latitude,
+        carto.height + observerHeight.value
+      );
       observerEntity = v.entities.add({
         position: elevatedPos,
-        point: { pixelSize: 14, color: Cesium.Color.YELLOW, outlineColor: Cesium.Color.BLACK, outlineWidth: 2 },
-        label: { text: "观察点", font: "14px sans-serif", pixelOffset: new Cesium.Cartesian2(0, -25), fillColor: Cesium.Color.YELLOW, outlineColor: Cesium.Color.BLACK, outlineWidth: 3, style: Cesium.LabelStyle.FILL_AND_OUTLINE },
+        point: {
+          pixelSize: 14,
+          color: Cesium.Color.YELLOW,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 2,
+        },
+        label: {
+          text: "观察点",
+          font: "14px sans-serif",
+          pixelOffset: new Cesium.Cartesian2(0, -25),
+          fillColor: Cesium.Color.YELLOW,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 3,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        },
       });
       statusText.value = `观察点已设置（高度 ${observerHeight.value}m，视距 ${maxDistance.value}m），点击"计算可视域"开始分析`;
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
@@ -80,7 +99,11 @@ async function calculateViewshed() {
 
   // 观察点位置（加高度）
   const obsCarto = Cesium.Cartographic.fromCartesian(observerPos);
-  const obsPos = Cesium.Cartesian3.fromRadians(obsCarto.longitude, obsCarto.latitude, obsCarto.height + observerHeight.value);
+  const obsPos = Cesium.Cartesian3.fromRadians(
+    obsCarto.longitude,
+    obsCarto.latitude,
+    obsCarto.height + observerHeight.value
+  );
   const obsHeight = obsCarto.height + observerHeight.value;
 
   const N = rayCount.value;
@@ -95,25 +118,48 @@ async function calculateViewshed() {
   for (let i = 0; i < N; i++) {
     const azimuth = (i / N) * Math.PI * 2; // 方位角（从正东逆时针）
     // 方向向量（ENU 坐标系：东=x, 北=y, 上=z）
-    const dirEnu = new Cesium.Cartesian3(Math.cos(azimuth), Math.sin(azimuth), 0);
+    const dirEnu = new Cesium.Cartesian3(
+      Math.cos(azimuth),
+      Math.sin(azimuth),
+      0
+    );
     // 转换到世界坐标系
-    const dirWorld = Cesium.Matrix4.multiplyByPointAsVector(enuMatrix, dirEnu, new Cesium.Cartesian3());
+    const dirWorld = Cesium.Matrix4.multiplyByPointAsVector(
+      enuMatrix,
+      dirEnu,
+      new Cesium.Cartesian3()
+    );
     Cesium.Cartesian3.normalize(dirWorld, dirWorld);
 
     // 沿方向步进采样，找到第一个被遮挡的点
     let visibleEnd = obsPos;
     let blocked = false;
     for (let dist = stepDist; dist <= maxDist; dist += stepDist) {
-      const samplePos = Cesium.Cartesian3.add(obsPos, Cesium.Cartesian3.multiplyByScalar(dirWorld, dist, new Cesium.Cartesian3()), new Cesium.Cartesian3());
+      const samplePos = Cesium.Cartesian3.add(
+        obsPos,
+        Cesium.Cartesian3.multiplyByScalar(
+          dirWorld,
+          dist,
+          new Cesium.Cartesian3()
+        ),
+        new Cesium.Cartesian3()
+      );
       const sampleCarto = Cesium.Cartographic.fromCartesian(samplePos);
       // 采样地形高程
-      const terrainPositions = await Cesium.sampleTerrainMostDetailed(v.terrainProvider, [sampleCarto]);
+      const terrainPositions = await Cesium.sampleTerrainMostDetailed(
+        v.terrainProvider,
+        [sampleCarto]
+      );
       const terrainHeight = terrainPositions[0]?.height ?? 0;
       // 视线高度（从观察点线性插值到采样点，假设视线水平）
       // 简化：视线高度 = 观察点高度（水平视线）
       if (terrainHeight > obsHeight - 1) {
         // 地形高于视线，被遮挡
-        visibleEnd = Cesium.Cartesian3.fromRadians(sampleCarto.longitude, sampleCarto.latitude, terrainHeight + 1);
+        visibleEnd = Cesium.Cartesian3.fromRadians(
+          sampleCarto.longitude,
+          sampleCarto.latitude,
+          terrainHeight + 1
+        );
         blocked = true;
         break;
       }
@@ -226,7 +272,11 @@ const explainMap: Record<string, () => string> = {
 大规模可视域建议用 GPU 着色器实现（深度缓冲 + 视锥体剔除）。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
@@ -238,19 +288,42 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
         @click="applySetObserver"
         >设置观察点</n-button
       >
-      <n-button size="small" type="success" @click="applyCalculate">计算可视域</n-button>
+      <n-button size="small" type="success" @click="applyCalculate"
+        >计算可视域</n-button
+      >
       <n-button size="small" quaternary @click="applyClear">清除</n-button>
       <div class="flex items-center gap-2 ml-2">
         <span class="text-xs text-gray-500">观察高度(m)</span>
-        <n-input-number v-model:value="observerHeight" :min="1" :max="500" :step="10" size="small" style="width: 90px" />
+        <n-input-number
+          v-model:value="observerHeight"
+          :min="1"
+          :max="500"
+          :step="10"
+          size="small"
+          style="width: 90px"
+        />
       </div>
       <div class="flex items-center gap-2">
         <span class="text-xs text-gray-500">视距(m)</span>
-        <n-input-number v-model:value="maxDistance" :min="500" :max="10000" :step="500" size="small" style="width: 100px" />
+        <n-input-number
+          v-model:value="maxDistance"
+          :min="500"
+          :max="10000"
+          :step="500"
+          size="small"
+          style="width: 100px"
+        />
       </div>
       <div class="flex items-center gap-2">
         <span class="text-xs text-gray-500">射线数</span>
-        <n-input-number v-model:value="rayCount" :min="12" :max="120" :step="12" size="small" style="width: 90px" />
+        <n-input-number
+          v-model:value="rayCount"
+          :min="12"
+          :max="120"
+          :step="12"
+          size="small"
+          style="width: 90px"
+        />
       </div>
     </div>
 

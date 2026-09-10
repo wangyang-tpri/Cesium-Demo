@@ -8,7 +8,9 @@ import SplitViewer from "@/components/base/SplitViewer.vue";
 const containerRef = ref<HTMLDivElement | null>(null);
 provide("splitViewerContainerRef", containerRef);
 const activeFeature = ref("analyze");
-const statusText = ref("淹没分析：点击「设置区域」在地图上点击，然后调节水位滑块查看淹没范围。");
+const statusText = ref(
+  "淹没分析：点击「设置区域」在地图上点击，然后调节水位滑块查看淹没范围。"
+);
 
 const { viewer } = useCesiumViewer(containerRef, {
   baseLayer: "tianditu-img",
@@ -60,8 +62,21 @@ function startPicking() {
       // 中心点标记
       centerEntity = v.entities.add({
         position: pos,
-        point: { pixelSize: 12, color: Cesium.Color.CYAN, outlineColor: Cesium.Color.WHITE, outlineWidth: 2 },
-        label: { text: "区域中心", font: "13px sans-serif", pixelOffset: new Cesium.Cartesian2(0, -22), fillColor: Cesium.Color.CYAN, outlineColor: Cesium.Color.BLACK, outlineWidth: 3, style: Cesium.LabelStyle.FILL_AND_OUTLINE },
+        point: {
+          pixelSize: 12,
+          color: Cesium.Color.CYAN,
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 2,
+        },
+        label: {
+          text: "区域中心",
+          font: "13px sans-serif",
+          pixelOffset: new Cesium.Cartesian2(0, -22),
+          fillColor: Cesium.Color.CYAN,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 3,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        },
       });
       statusText.value = `区域中心已设置（范围 ${areaSize.value}m x ${areaSize.value}m），调节水位滑块查看淹没范围`;
       updateFlood();
@@ -86,17 +101,22 @@ async function updateFlood() {
       // 近似：经纬度偏移（米转度）
       const lonOffset = dx / (111320 * Math.cos(centerCarto.latitude));
       const latOffset = dy / 110540;
-      cartographics.push(Cesium.Cartographic.fromRadians(
-        centerCarto.longitude + lonOffset,
-        centerCarto.latitude + latOffset,
-        0
-      ));
+      cartographics.push(
+        Cesium.Cartographic.fromRadians(
+          centerCarto.longitude + lonOffset,
+          centerCarto.latitude + latOffset,
+          0
+        )
+      );
     }
   }
 
   // 采样地形高程
   statusText.value = "正在采样地形高程...";
-  const terrainPositions = await Cesium.sampleTerrainMostDetailed(v.terrainProvider, cartographics);
+  const terrainPositions = await Cesium.sampleTerrainMostDetailed(
+    v.terrainProvider,
+    cartographics
+  );
 
   // 构建淹没区域多边形（低于水位的网格单元）
   const wLevel = waterLevel.value;
@@ -136,9 +156,16 @@ async function updateFlood() {
     terrainPositions[GRID * (GRID + 1) + GRID],
     terrainPositions[GRID * (GRID + 1)],
     terrainPositions[0],
-  ].filter(Boolean).map((c) => Cesium.Cartographic.toCartesian(c!));
+  ]
+    .filter(Boolean)
+    .map((c) => Cesium.Cartographic.toCartesian(c!));
   areaEntity = v.entities.add({
-    polyline: { positions: boundaryPositions, width: 2, material: Cesium.Color.WHITE.withAlpha(0.8), dashPattern: 255 },
+    polyline: {
+      positions: boundaryPositions,
+      width: 2,
+      material: Cesium.Color.WHITE.withAlpha(0.8),
+      dashPattern: 255,
+    } as any,
   });
 
   // 绘制淹没区域（蓝色半透明）
@@ -160,10 +187,16 @@ async function updateFlood() {
     terrainPositions[GRID],
     terrainPositions[GRID * (GRID + 1) + GRID],
     terrainPositions[GRID * (GRID + 1)],
-  ].filter(Boolean).map((c) => {
-    const carto = c!;
-    return Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, wLevel);
-  });
+  ]
+    .filter(Boolean)
+    .map((c) => {
+      const carto = c!;
+      return Cesium.Cartesian3.fromRadians(
+        carto.longitude,
+        carto.latitude,
+        wLevel
+      );
+    });
   waterSurfaceEntity = v.entities.add({
     polygon: {
       hierarchy: new Cesium.PolygonHierarchy(waterPositions),
@@ -250,7 +283,11 @@ const explainMap: Record<string, () => string> = {
 可扩展为：动态水位上升动画、淹没时序回放、淹没面积统计。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
@@ -273,11 +310,20 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
           :tooltip="true"
           style="width: 200px"
         />
-        <span class="text-sm font-mono font-bold text-blue-500">{{ waterLevel }}m</span>
+        <span class="text-sm font-mono font-bold text-blue-500"
+          >{{ waterLevel }}m</span
+        >
       </div>
       <div class="flex items-center gap-2">
         <span class="text-xs text-gray-500">范围(m)</span>
-        <n-input-number v-model:value="areaSize" :min="1000" :max="10000" :step="500" size="small" style="width: 100px" />
+        <n-input-number
+          v-model:value="areaSize"
+          :min="1000"
+          :max="10000"
+          :step="500"
+          size="small"
+          style="width: 100px"
+        />
       </div>
     </div>
 

@@ -72,11 +72,11 @@ let cameraFlying = false;
 /** 启用/禁用用户相机输入（鼠标）—— 漫游时禁用，暂停/重置时恢复 */
 function setCameraInputEnabled(v: Cesium.Viewer, enabled: boolean) {
   const controller = v.scene.screenSpaceCameraController;
-  controller.enableTranslate = enabled;  // 平移
-  controller.enableZoom = enabled;       // 缩放
-  controller.enableRotate = enabled;     // 旋转
-  controller.enableTilt = enabled;       // 倾斜
-  controller.enableLook = enabled;       // 环视
+  controller.enableTranslate = enabled; // 平移
+  controller.enableZoom = enabled; // 缩放
+  controller.enableRotate = enabled; // 旋转
+  controller.enableTilt = enabled; // 倾斜
+  controller.enableLook = enabled; // 环视
 }
 
 /* ============ 工具函数 ============ */
@@ -199,7 +199,8 @@ function applyStart() {
   v.clock.shouldAnimate = true;
   // 漫游开始：禁用用户鼠标和键盘操作，避免干扰相机跟随
   setCameraInputEnabled(v, false);
-  statusText.value = "▶ 漫游开始：相机飞往路径起点，然后沿路径飞行（用户操作已禁用）";
+  statusText.value =
+    "▶ 漫游开始：相机飞往路径起点，然后沿路径飞行（用户操作已禁用）";
   // 相机从当前位置 flyTo 到路径起点（明显的飞行动画，2秒）
   flyToPath(v, startTime, 2);
 }

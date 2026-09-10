@@ -319,7 +319,6 @@ const { code, explanation } = useCodeExplain(
       :explanation="explanation"
       :default-split-size="70"
       storage-key="dynamic-split"
-      @split-change="onSplitChange"
     >
       <template #scene-overlay>
         <div

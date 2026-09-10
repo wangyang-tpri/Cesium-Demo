@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { ref, provide, onBeforeUnmount } from 'vue';
-import * as Cesium from 'cesium';
-import SplitViewer from '@/components/base/SplitViewer.vue';
-import { useCesiumViewer } from '@/hooks/useCesiumViewer';
-import { useCodeExplain } from '@/hooks/useCodeExplain';
+import { ref, provide, onBeforeUnmount } from "vue";
+import * as Cesium from "cesium";
+import SplitViewer from "@/components/base/SplitViewer.vue";
+import { useCesiumViewer } from "@/hooks/useCesiumViewer";
+import { useCodeExplain } from "@/hooks/useCodeExplain";
 
 const containerRef = ref<HTMLDivElement | null>(null);
-provide('splitViewerContainerRef', containerRef);
+provide("splitViewerContainerRef", containerRef);
 
 const { viewer } = useCesiumViewer(containerRef, {
-  baseLayer: 'tianditu-img',
+  baseLayer: "tianditu-img",
   camera: { position: [108.94, 34.2, 30000], pitch: -55 },
 });
 
-const activeFeature = ref<'pick' | 'clear'>('pick');
-const statusText = ref('坐标拾取：点击「开始拾取」，在地图上点击任意位置获取坐标信息。');
+const activeFeature = ref<"pick" | "clear">("pick");
+const statusText = ref(
+  "坐标拾取：点击「开始拾取」，在地图上点击任意位置获取坐标信息。"
+);
 
 interface PickRecord {
   id: number;
@@ -33,21 +35,24 @@ let handler: Cesium.ScreenSpaceEventHandler | null = null;
 let markerEntities: Cesium.Entity[] = [];
 
 function applyPick() {
-  activeFeature.value = 'pick';
+  activeFeature.value = "pick";
   if (picking) {
     stopPicking();
-    statusText.value = '已停止拾取，点击「开始拾取」重新开始。';
+    statusText.value = "已停止拾取，点击「开始拾取」重新开始。";
     return;
   }
   startPicking();
-  statusText.value = '拾取模式已开启，点击地图任意位置获取坐标。';
+  statusText.value = "拾取模式已开启，点击地图任意位置获取坐标。";
 }
 
 function startPicking() {
+  const v = viewer.value;
+  if (!v) return;
   picking = true;
-  if (!handler) handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+  if (!handler)
+    handler = new Cesium.ScreenSpaceEventHandler(v.scene.canvas);
   handler.setInputAction((click: any) => {
-    const cartesian = viewer.scene.pickPosition(click.position);
+    const cartesian = v.scene.pickPosition(click.position);
     if (!cartesian) return;
     const carto = Cesium.Cartographic.fromCartesian(cartesian);
     const record: PickRecord = {
@@ -61,12 +66,17 @@ function startPicking() {
     };
     pickRecords.value.unshift(record);
     // 添加标记点
-    const entity = viewer.entities.add({
+    const entity = v.entities.add({
       position: cartesian,
-      point: { pixelSize: 10, color: Cesium.Color.RED, outlineColor: Cesium.Color.WHITE, outlineWidth: 2 },
+      point: {
+        pixelSize: 10,
+        color: Cesium.Color.RED,
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 2,
+      },
       label: {
         text: `#${record.id}`,
-        font: '12px sans-serif',
+        font: "12px sans-serif",
         pixelOffset: new Cesium.Cartesian2(0, -18),
         fillColor: Cesium.Color.WHITE,
         outlineColor: Cesium.Color.BLACK,
@@ -75,7 +85,11 @@ function startPicking() {
       },
     });
     markerEntities.push(entity);
-    statusText.value = `已拾取 #${record.id}：经度 ${record.longitude.toFixed(6)}°, 纬度 ${record.latitude.toFixed(6)}°, 高程 ${record.height.toFixed(2)}m`;
+    statusText.value = `已拾取 #${record.id}：经度 ${record.longitude.toFixed(
+      6
+    )}°, 纬度 ${record.latitude.toFixed(6)}°, 高程 ${record.height.toFixed(
+      2
+    )}m`;
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 }
 
@@ -88,35 +102,44 @@ function stopPicking() {
 }
 
 function applyClear() {
-  activeFeature.value = 'clear';
+  const v = viewer.value;
+  activeFeature.value = "clear";
   stopPicking();
   pickRecords.value = [];
   pickIdCounter = 0;
-  markerEntities.forEach(e => viewer.entities.remove(e));
+  if (v) markerEntities.forEach((e) => v.entities.remove(e));
   markerEntities = [];
-  statusText.value = '已清除所有拾取记录，点击「开始拾取」重新开始。';
+  statusText.value = "已清除所有拾取记录，点击「开始拾取」重新开始。";
 }
 
 function copyRecord(record: PickRecord) {
-  const text = `${record.longitude.toFixed(6)}, ${record.latitude.toFixed(6)}, ${record.height.toFixed(2)}`;
+  const text = `${record.longitude.toFixed(6)}, ${record.latitude.toFixed(
+    6
+  )}, ${record.height.toFixed(2)}`;
   navigator.clipboard.writeText(text).then(() => {
     statusText.value = `已复制 #${record.id} 坐标到剪贴板：${text}`;
   });
 }
 
 function flyToRecord(record: PickRecord) {
-  viewer.flyTo(record.cartesian ? { position: record.cartesian } as any : undefined, {
-    duration: 1.5,
-    offset: new Cesium.HeadingPitchRange(0, -Cesium.Math.PI_OVER_TWO, 500),
-  });
+  const v = viewer.value;
+  if (!v) return;
+  v.flyTo(
+    record.cartesian ? ({ position: record.cartesian } as any) : undefined,
+    {
+      duration: 1.5,
+      offset: new Cesium.HeadingPitchRange(0, -Cesium.Math.PI_OVER_TWO, 500),
+    }
+  );
 }
 
 onBeforeUnmount(() => {
   stopPicking();
-  markerEntities.forEach(e => viewer.entities.remove(e));
+  const v = viewer.value;
+  if (v) markerEntities.forEach((e) => v.entities.remove(e));
 });
 
-const codeMap: Record<'pick' | 'clear', () => string> = {
+const codeMap: Record<"pick" | "clear", () => string> = {
   pick: () => `// 1. 创建屏幕空间事件处理器
 const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
 
@@ -146,7 +169,7 @@ markerEntities = [];
 if (handler) { handler.destroy(); handler = null; }`,
 };
 
-const explainMap: Record<'pick' | 'clear', () => string> = {
+const explainMap: Record<"pick" | "clear", () => string> = {
   pick: () => `【原理】坐标拾取 = 屏幕事件 + 三维坐标转换 + 地理坐标提取：
 1. 使用 ScreenSpaceEventHandler 监听地图左键点击事件
 2. scene.pickPosition 从屏幕像素坐标获取三维笛卡尔坐标（含地形高程）
@@ -169,14 +192,22 @@ const explainMap: Record<'pick' | 'clear', () => string> = {
 【要点】清除操作会移除所有标记和记录，不可撤销。`,
 };
 
-const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature);
+const { code, explanation } = useCodeExplain(
+  codeMap,
+  explainMap,
+  activeFeature
+);
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-3 p-4">
     <div class="flex flex-wrap items-center gap-2">
-      <n-button size="small" :type="picking ? 'warning' : 'success'" @click="applyPick">
-        {{ picking ? '停止拾取' : '开始拾取' }}
+      <n-button
+        size="small"
+        :type="picking ? 'warning' : 'success'"
+        @click="applyPick"
+      >
+        {{ picking ? "停止拾取" : "开始拾取" }}
       </n-button>
       <n-button size="small" quaternary @click="applyClear">清除</n-button>
     </div>
@@ -189,7 +220,9 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
       storage-key="coordinate-pick-split"
     >
       <template #scene-overlay>
-        <div class="absolute left-3 top-3 z-10 max-w-[70%] rounded bg-black/60 px-3 py-1.5 text-xs text-white">
+        <div
+          class="absolute left-3 top-3 z-10 max-w-[70%] rounded bg-black/60 px-3 py-1.5 text-xs text-white"
+        >
           {{ statusText }}
         </div>
       </template>
@@ -198,9 +231,14 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
         <div class="border-t border-gray-200 bg-gray-50 p-4">
           <div class="mb-2 flex items-center justify-between">
             <div class="text-sm font-semibold text-gray-700">拾取记录</div>
-            <div class="text-xs text-gray-500">共 <b class="text-blue-600">{{ pickRecords.length }}</b> 条</div>
+            <div class="text-xs text-gray-500">
+              共 <b class="text-blue-600">{{ pickRecords.length }}</b> 条
+            </div>
           </div>
-          <div v-if="pickRecords.length === 0" class="py-4 text-center text-xs text-gray-400">
+          <div
+            v-if="pickRecords.length === 0"
+            class="py-4 text-center text-xs text-gray-400"
+          >
             点击「开始拾取」后在地图上点击获取坐标
           </div>
           <div v-else class="max-h-48 overflow-auto">
@@ -216,15 +254,29 @@ const { code, explanation } = useCodeExplain(codeMap, explainMap, activeFeature)
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="r in pickRecords" :key="r.id" class="border-t border-gray-200 hover:bg-gray-100">
+                <tr
+                  v-for="r in pickRecords"
+                  :key="r.id"
+                  class="border-t border-gray-200 hover:bg-gray-100"
+                >
                   <td class="px-2 py-1 font-medium text-red-600">{{ r.id }}</td>
                   <td class="px-2 py-1">{{ r.longitude.toFixed(6) }}°</td>
                   <td class="px-2 py-1">{{ r.latitude.toFixed(6) }}°</td>
                   <td class="px-2 py-1">{{ r.height.toFixed(2) }}</td>
-                  <td class="px-2 py-1 text-gray-500">({{ r.screenX.toFixed(0) }}, {{ r.screenY.toFixed(0) }})</td>
+                  <td class="px-2 py-1 text-gray-500">
+                    ({{ r.screenX.toFixed(0) }}, {{ r.screenY.toFixed(0) }})
+                  </td>
                   <td class="px-2 py-1">
-                    <n-button size="tiny" quaternary @click="copyRecord(r)">复制</n-button>
-                    <n-button size="tiny" type="primary" quaternary @click="flyToRecord(r)">定位</n-button>
+                    <n-button size="tiny" quaternary @click="copyRecord(r)"
+                      >复制</n-button
+                    >
+                    <n-button
+                      size="tiny"
+                      type="primary"
+                      quaternary
+                      @click="flyToRecord(r)"
+                      >定位</n-button
+                    >
                   </td>
                 </tr>
               </tbody>

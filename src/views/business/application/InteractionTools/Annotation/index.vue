@@ -164,7 +164,6 @@ function addAnnotation(position: Cesium.Cartesian3) {
         verticalOrigin: Cesium.VerticalOrigin.CENTER,
       },
     });
-    entity.label.backgroundPadding = new Cesium.Cartesian2(10, 6);
   } else if (currentType === "icon") {
     name = `图标${id}`;
     entity = v.entities.add({
@@ -197,7 +196,6 @@ function addAnnotation(position: Cesium.Cartesian3) {
         style: Cesium.LabelStyle.FILL,
       },
     });
-    entity.label.backgroundPadding = new Cesium.Cartesian2(8, 4);
   }
 
   annotationItems.value.push({
@@ -460,7 +458,7 @@ const { code, explanation } = useCodeExplain(
     </div>
 
     <SplitViewer
-      :title="activeFeature"
+      :title="activeFeature ?? ''"
       :code="code"
       :explanation="explanation"
       :default-split-size="70"
