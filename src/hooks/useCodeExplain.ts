@@ -11,13 +11,15 @@ import { highlightCode } from '../utils/codeHighlight';
 export function useCodeExplain<T extends string>(
   codeMap: Record<T, () => string>,
   explainMap: Record<T, () => string>,
-  activeKey: Ref<T>
+  activeKey: Ref<T | null>
 ) {
   const code = computed(() => {
+    if (!activeKey.value) return '';
     const fn = codeMap[activeKey.value];
     return fn ? highlightCode(fn()) : '';
   });
   const explanation = computed(() => {
+    if (!activeKey.value) return '';
     const fn = explainMap[activeKey.value];
     return fn ? fn() : '';
   });

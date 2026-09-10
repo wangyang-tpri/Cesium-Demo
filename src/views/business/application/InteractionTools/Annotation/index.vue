@@ -14,7 +14,7 @@ const { viewer } = useCesiumViewer(containerRef, {
 });
 
 type AnnotationType = "text" | "icon" | "point-label";
-const activeFeature = ref<AnnotationType | "clear">("text");
+const activeFeature = ref<AnnotationType | "clear" | null>(null);
 const statusText = ref("标注工具：选择标注类型，在地图上点击添加标注。");
 
 interface AnnotationItem {
@@ -27,7 +27,7 @@ interface AnnotationItem {
 const annotationItems = ref<AnnotationItem[]>([]);
 let annoIdCounter = 0;
 let adding = false;
-let currentType: AnnotationType = "text";
+let currentType: AnnotationType | null = null;
 let handler: Cesium.ScreenSpaceEventHandler | null = null;
 let nativeClickListener: ((e: MouseEvent) => void) | null = null;
 
@@ -76,41 +76,39 @@ function startAdding() {
   }
 
   nativeClickListener = (e: MouseEvent) => {
-    console.log("[Annotation] native click triggered:", e.clientX, e.clientY);
     const canvas = v.scene.canvas;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const windowPos = new Cesium.Cartesian2(x, y);
-    console.log("[Annotation] windowPos:", x, y);
 
     // 先检查是否点击到了已有标注 entity，如果是则打开编辑
     const picked = v.scene.pick(windowPos);
-    console.log("[Annotation] picked:", !!picked, picked?.id?._id);
     if (picked && picked.id) {
-      const clickedItem = annotationItems.value.find(
-        (item) => item.entity === picked.id
-      );
-      if (clickedItem) {
-        openEditModal(clickedItem);
-        return;
+      // 兼容 Cesium 不同版本：picked.id 可能是 Entity 或包含 id 的对象
+      const pickedEntity =
+        picked.id instanceof Cesium.Entity ? picked.id : (picked.id as any).id;
+      if (pickedEntity) {
+        const clickedItem = annotationItems.value.find(
+          (item) => item.entity === pickedEntity
+        );
+        if (clickedItem) {
+          openEditModal(clickedItem);
+          return;
+        }
       }
     }
 
     // 否则添加新标注
     const ray = v.camera.getPickRay(windowPos);
-    console.log("[Annotation] ray:", !!ray);
     if (!ray) return;
     const cartesian = v.scene.globe.pick(ray, v.scene);
-    console.log("[Annotation] cartesian:", !!cartesian);
     if (!cartesian) return;
     addAnnotation(cartesian);
   };
   v.scene.canvas.addEventListener("click", nativeClickListener);
-  console.log("[Annotation] click listener added to canvas:", v.scene.canvas === document.querySelector('canvas'));
 }
 
-// viewer 就绪后自动开始添加（默认文字标注）
 // viewer 可能被多次创建/销毁（如 SplitViewer 容器变化），需要重新绑定事件
 watch(
   () => viewer.value,
@@ -124,10 +122,6 @@ watch(
     }
     // viewer 就绪且处于添加模式时，重新绑定事件
     if (newV && adding) {
-      nextTick(() => startAdding());
-    } else if (newV && !adding) {
-      // 首次初始化，自动进入文字标注添加模式
-      adding = true;
       nextTick(() => startAdding());
     }
   },
@@ -149,7 +143,7 @@ function stopAdding() {
 
 function addAnnotation(position: Cesium.Cartesian3) {
   const v = viewer.value;
-  if (!v) return;
+  if (!v || !currentType) return;
   const id = ++annoIdCounter;
   let entity: Cesium.Entity;
   let name = "";
@@ -166,11 +160,11 @@ function addAnnotation(position: Cesium.Cartesian3) {
           bgColor.value
         ).withAlpha(0.85),
         showBackground: true,
-        padding: new Cesium.Cartesian2(10, 6),
         style: Cesium.LabelStyle.FILL,
         verticalOrigin: Cesium.VerticalOrigin.CENTER,
       },
     });
+    entity.label.backgroundPadding = new Cesium.Cartesian2(10, 6);
   } else if (currentType === "icon") {
     name = `图标${id}`;
     entity = v.entities.add({
@@ -200,10 +194,10 @@ function addAnnotation(position: Cesium.Cartesian3) {
           bgColor.value
         ).withAlpha(0.85),
         showBackground: true,
-        padding: new Cesium.Cartesian2(8, 4),
         style: Cesium.LabelStyle.FILL,
       },
     });
+    entity.label.backgroundPadding = new Cesium.Cartesian2(8, 4);
   }
 
   annotationItems.value.push({
@@ -271,7 +265,7 @@ function saveEdit() {
   item.text = editText.value;
   // 更新 entity 的 label 文字
   if (item.entity.label) {
-    item.entity.label.text = editText.value;
+    (item.entity.label as any).text = editText.value;
   }
   showEditModal.value = false;
   editingItem.value = null;

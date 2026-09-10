@@ -47,6 +47,8 @@ const selectedTower = ref<Tower | null>(null);
 
 // 加载输电线路
 function loadTransmissionLine() {
+  const v = viewer.value;
+  if (!v) return;
   clearAll();
 
   // 杆塔路径（模拟一条输电线路）
@@ -73,7 +75,7 @@ function loadTransmissionLine() {
 
     // 杆塔（圆柱体）
     const color = tower.status === '故障' ? Cesium.Color.RED : tower.status === '巡检中' ? Cesium.Color.ORANGE : Cesium.Color.GRAY;
-    towerEntities.push(viewer.entities.add({
+    towerEntities.push(v.entities.add({
       name: tower.name,
       position: Cesium.Cartesian3.fromDegrees(pos[0], pos[1], height / 2),
       cylinder: {
@@ -108,7 +110,7 @@ function loadTransmissionLine() {
     const midHeight = (towers.value[i].height + towers.value[i + 1].height) / 2 - 3;
     const mid = Cesium.Cartesian3.fromDegrees(midLon, midLat, midHeight);
 
-    lineEntities.push(viewer.entities.add({
+    lineEntities.push(v.entities.add({
       polyline: {
         positions: [p1, mid, p2],
         width: 2,
@@ -121,14 +123,16 @@ function loadTransmissionLine() {
   activeFeature.value = 'transmission';
   setupPickHandler();
   statusText.value = `已加载输电线路，共 ${towers.value.length} 基杆塔，${towers.value.filter(t => t.status === '故障').length} 基故障。点击杆塔查看详情。`;
-  viewer.flyTo(towerEntities, { duration: 2 });
+  v.flyTo(towerEntities, { duration: 2 });
 }
 
 // 走廊安全分析
 function showCorridor() {
+  const v = viewer.value;
+  if (!v) return;
   if (towers.value.length === 0) loadTransmissionLine();
 
-  if (corridorEntity) viewer.entities.remove(corridorEntity);
+  if (corridorEntity) v.entities.remove(corridorEntity);
 
   // 线路走廊缓冲区（沿线路的多边形）
   const corridorPositions: Cesium.Cartesian3[] = [];
@@ -143,7 +147,7 @@ function showCorridor() {
     corridorPositions.push(Cesium.Cartesian3.fromDegrees(towers.value[i].position[0] + halfWidth, towers.value[i].position[1], 0));
   }
 
-  corridorEntity = viewer.entities.add({
+  corridorEntity = v.entities.add({
     polygon: {
       hierarchy: new Cesium.PolygonHierarchy(corridorPositions),
       material: Cesium.Color.YELLOW.withAlpha(0.2),
@@ -158,6 +162,8 @@ function showCorridor() {
 
 // 故障点标记
 function markFaults() {
+  const v = viewer.value;
+  if (!v) return;
   if (towers.value.length === 0) loadTransmissionLine();
 
   clearFaults();
@@ -181,7 +187,7 @@ function markFaults() {
     faultPoints.value.push(fault);
 
     const color = fault.level === '紧急' ? Cesium.Color.RED : fault.level === '严重' ? Cesium.Color.ORANGE : Cesium.Color.YELLOW;
-    faultEntities.push(viewer.entities.add({
+    faultEntities.push(v.entities.add({
       position: Cesium.Cartesian3.fromDegrees(lon, lat, 20),
       point: { pixelSize: 16, color, outlineColor: Cesium.Color.WHITE, outlineWidth: 2 },
       label: {
@@ -201,9 +207,11 @@ function markFaults() {
 }
 
 function setupPickHandler() {
-  if (!handler) handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+  const v = viewer.value;
+  if (!v) return;
+  if (!handler) handler = new Cesium.ScreenSpaceEventHandler(v.scene.canvas);
   handler.setInputAction((click: any) => {
-    const picked = viewer.scene.pick(click.position);
+    const picked = v.scene.pick(click.position);
     if (picked && picked.id && picked.id.properties && picked.id.properties.towerId) {
       const tid = picked.id.properties.towerId.getValue();
       selectedTower.value = towers.value.find(t => t.id === tid) || null;
@@ -217,17 +225,21 @@ function setupPickHandler() {
 }
 
 function clearFaults() {
-  faultEntities.forEach(e => viewer.entities.remove(e));
+  const v = viewer.value;
+  if (v) faultEntities.forEach(e => v.entities.remove(e));
   faultEntities = [];
   faultPoints.value = [];
 }
 
 function clearAll() {
-  towerEntities.forEach(e => viewer.entities.remove(e));
+  const v = viewer.value;
+  if (v) {
+    towerEntities.forEach(e => v.entities.remove(e));
+    lineEntities.forEach(e => v.entities.remove(e));
+    if (corridorEntity) { v.entities.remove(corridorEntity); corridorEntity = null; }
+  }
   towerEntities = [];
-  lineEntities.forEach(e => viewer.entities.remove(e));
   lineEntities = [];
-  if (corridorEntity) { viewer.entities.remove(corridorEntity); corridorEntity = null; }
   clearFaults();
   towers.value = [];
   selectedTower.value = null;
@@ -246,7 +258,7 @@ onBeforeUnmount(() => {
 
 const codeMap: Record<PowerAction, () => string> = {
   transmission: () => `// 1. 杆塔（圆柱体）
-const tower = viewer.entities.add({
+const tower = viewer.value.entities.add({
   position: Cartesian3.fromDegrees(lon, lat, height / 2),
   cylinder: {
     length: height,
@@ -261,7 +273,7 @@ const tower = viewer.entities.add({
 const p1 = Cartesian3.fromDegrees(lon1, lat1, h1);
 const mid = Cartesian3.fromDegrees(midLon, midLat, midHeight - 3); // 弧垂
 const p2 = Cartesian3.fromDegrees(lon2, lat2, h2);
-viewer.entities.add({
+viewer.value.entities.add({
   polyline: { positions: [p1, mid, p2], width: 2, material: Color.SILVER },
 });`,
   corridor: () => `// 线路走廊安全区（缓冲区多边形）
@@ -273,7 +285,7 @@ towers.forEach(t => positions.push(Cartesian3.fromDegrees(t.lon - halfWidth, t.l
 for (let i = towers.length - 1; i >= 0; i--) {
   positions.push(Cartesian3.fromDegrees(towers[i].lon + halfWidth, towers[i].lat, 0));
 }
-viewer.entities.add({
+viewer.value.entities.add({
   polygon: {
     hierarchy: new PolygonHierarchy(positions),
     material: Color.YELLOW.withAlpha(0.2),
@@ -282,7 +294,7 @@ viewer.entities.add({
 });`,
   fault: () => `// 故障点标记
 const levelColors = { '紧急': Color.RED, '严重': Color.ORANGE, '一般': Color.YELLOW };
-viewer.entities.add({
+viewer.value.entities.add({
   position: Cartesian3.fromDegrees(lon, lat, 20),
   point: { pixelSize: 16, color: levelColors[level], outlineColor: Color.WHITE, outlineWidth: 2 },
   label: {
@@ -293,10 +305,10 @@ viewer.entities.add({
   },
 });`,
   clear: () => `// 清除所有电力数据
-towerEntities.forEach(e => viewer.entities.remove(e));
-lineEntities.forEach(e => viewer.entities.remove(e));
-if (corridorEntity) viewer.entities.remove(corridorEntity);
-faultEntities.forEach(e => viewer.entities.remove(e));
+towerEntities.forEach(e => viewer.value.entities.remove(e));
+lineEntities.forEach(e => viewer.value.entities.remove(e));
+if (corridorEntity) viewer.value.entities.remove(corridorEntity);
+faultEntities.forEach(e => viewer.value.entities.remove(e));
 if (handler) { handler.destroy(); handler = null; }`,
 };
 

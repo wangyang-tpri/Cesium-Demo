@@ -41,11 +41,14 @@ let heatmapEntities: Cesium.Entity[] = [];
 let buildingIdCounter = 0;
 let componentIdCounter = 0;
 let handler: Cesium.ScreenSpaceEventHandler | null = null;
+let initTimer: ReturnType<typeof setTimeout> | null = null;
 
 const selectedBuilding = ref<Building | null>(null);
 
 // 生成随机建筑群
 function generateBuildings() {
+  const v = viewer.value;
+  if (!v) return;
   clearBuildings();
   const centerLon = 116.397;
   const centerLat = 39.908;
@@ -67,7 +70,7 @@ function generateBuildings() {
       };
       buildings.value.push(building);
 
-      const entity = viewer.entities.add({
+      const entity = v.entities.add({
         name: building.name,
         position: Cesium.Cartesian3.fromDegrees(lon, lat, height / 2),
         box: {
@@ -84,11 +87,13 @@ function generateBuildings() {
 
   activeFeature.value = 'buildings';
   statusText.value = `已生成 ${buildings.value.length} 栋城市建筑，点击建筑查看详情。`;
-  viewer.flyTo(buildingEntities, { duration: 2 });
+  v.flyTo(buildingEntities, { duration: 2 });
 }
 
 // 加载城市部件
 function loadComponents() {
+  const v = viewer.value;
+  if (!v) return;
   clearComponents();
   const centerLon = 116.397;
   const centerLat = 39.908;
@@ -104,7 +109,7 @@ function loadComponents() {
     const component: CityComponent = { id, type, position: [lon, lat], status };
     cityComponents.value.push(component);
 
-    const entity = viewer.entities.add({
+    const entity = v.entities.add({
       position: Cesium.Cartesian3.fromDegrees(lon, lat, 5),
       point: {
         pixelSize: 12,
@@ -132,6 +137,8 @@ function loadComponents() {
 
 // 生成人口热力图
 function generateHeatmap() {
+  const v = viewer.value;
+  if (!v) return;
   clearHeatmap();
   const centerLon = 116.397;
   const centerLat = 39.908;
@@ -151,7 +158,7 @@ function generateHeatmap() {
         : density > 0.3 ? Cesium.Color.YELLOW.withAlpha(0.6)
         : Cesium.Color.GREEN.withAlpha(0.6);
 
-      const entity = viewer.entities.add({
+      const entity = v.entities.add({
         rectangle: {
           coordinates: Cesium.Rectangle.fromDegrees(lon, lat, lon + cellSize, lat + cellSize),
           material: color,
@@ -169,9 +176,11 @@ function generateHeatmap() {
 
 // 点击建筑拾取
 function setupPickHandler() {
-  if (!handler) handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+  const v = viewer.value;
+  if (!v) return;
+  if (!handler) handler = new Cesium.ScreenSpaceEventHandler(v.scene.canvas);
   handler.setInputAction((click: any) => {
-    const picked = viewer.scene.pick(click.position);
+    const picked = v.scene.pick(click.position);
     if (picked && picked.id && picked.id.properties && picked.id.properties.buildingId) {
       const bid = picked.id.properties.buildingId.getValue();
       selectedBuilding.value = buildings.value.find(b => b.id === bid) || null;
@@ -185,20 +194,23 @@ function setupPickHandler() {
 }
 
 function clearBuildings() {
-  buildingEntities.forEach(e => viewer.entities.remove(e));
+  const v = viewer.value;
+  if (v) buildingEntities.forEach(e => v.entities.remove(e));
   buildingEntities = [];
   buildings.value = [];
   selectedBuilding.value = null;
 }
 
 function clearComponents() {
-  componentEntities.forEach(e => viewer.entities.remove(e));
+  const v = viewer.value;
+  if (v) componentEntities.forEach(e => v.entities.remove(e));
   componentEntities = [];
   cityComponents.value = [];
 }
 
 function clearHeatmap() {
-  heatmapEntities.forEach(e => viewer.entities.remove(e));
+  const v = viewer.value;
+  if (v) heatmapEntities.forEach(e => v.entities.remove(e));
   heatmapEntities = [];
 }
 
@@ -212,6 +224,7 @@ function applyClear() {
 }
 
 onBeforeUnmount(() => {
+  if (initTimer) clearTimeout(initTimer);
   if (handler) handler.destroy();
   clearBuildings();
   clearComponents();
@@ -219,14 +232,14 @@ onBeforeUnmount(() => {
 });
 
 // 初始化时自动加载建筑并设置拾取
-setTimeout(() => {
+initTimer = setTimeout(() => {
   generateBuildings();
   setupPickHandler();
 }, 500);
 
 const codeMap: Record<CityAction, () => string> = {
   buildings: () => `// 1. 创建3D建筑（Box实体）
-const building = viewer.entities.add({
+const building = viewer.value.entities.add({
   name: '商业楼1号',
   position: Cartesian3.fromDegrees(lon, lat, height / 2),
   box: {
@@ -240,7 +253,7 @@ const building = viewer.entities.add({
 
 // 2. 点击拾取建筑信息
 handler.setInputAction((click) => {
-  const picked = viewer.scene.pick(click.position);
+  const picked = viewer.value.scene.pick(click.position);
   if (picked?.id?.properties?.buildingId) {
     const bid = picked.id.properties.buildingId.getValue();
     const building = buildings.find(b => b.id === bid);
@@ -248,7 +261,7 @@ handler.setInputAction((click) => {
 }, ScreenSpaceEventType.LEFT_CLICK);`,
   components: () => `// 城市部件管理（点+标签）
 const types = ['路灯', '井盖', '监控', '消防栓'];
-const entity = viewer.entities.add({
+const entity = viewer.value.entities.add({
   position: Cartesian3.fromDegrees(lon, lat, 5),
   point: {
     pixelSize: 12,
@@ -273,7 +286,7 @@ for (let row = 0; row < gridSize; row++) {
       : density > 0.3 ? Color.YELLOW.withAlpha(0.6)
       : Color.GREEN.withAlpha(0.6);
 
-    viewer.entities.add({
+    viewer.value.entities.add({
       rectangle: {
         coordinates: Rectangle.fromDegrees(lon, lat, lon + size, lat + size),
         material: color,
@@ -282,9 +295,9 @@ for (let row = 0; row < gridSize; row++) {
   }
 }`,
   clear: () => `// 清除所有城市数据
-buildingEntities.forEach(e => viewer.entities.remove(e));
-componentEntities.forEach(e => viewer.entities.remove(e));
-heatmapEntities.forEach(e => viewer.entities.remove(e));
+buildingEntities.forEach(e => viewer.value.entities.remove(e));
+componentEntities.forEach(e => viewer.value.entities.remove(e));
+heatmapEntities.forEach(e => viewer.value.entities.remove(e));
 if (handler) { handler.destroy(); handler = null; }`,
 };
 
@@ -302,7 +315,7 @@ const explainMap: Record<CityAction, () => string> = {
 • Cartesian3.fromDegrees: 经纬度转笛卡尔坐标
 • scene.pick: 场景拾取，获取点击位置的实体
 • Color.fromHsl: HSL颜色空间创建颜色
-• viewer.flyTo(entities): 飞行到多个实体的包围视角`,
+• viewer.value.flyTo(entities): 飞行到多个实体的包围视角`,
   components: () => `【原理】城市部件管理 = 点实体 + 标签 + 状态编码：
 1. 城市部件包括路灯、井盖、监控、消防栓等基础设施
 2. 使用 Entity.point 在地图上标记部件位置，不同类型用不同颜色
